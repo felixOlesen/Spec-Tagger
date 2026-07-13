@@ -1,5 +1,3 @@
-import sys
-sys.path.append("..")
 from spec_tagger.main import example_function
 import pytest
 

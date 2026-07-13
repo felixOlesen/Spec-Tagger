@@ -1,6 +1,9 @@
 import argparse
 
 
+def example_function(x):
+    return x+1
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--name", default="World")
