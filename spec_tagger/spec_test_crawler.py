@@ -2,34 +2,21 @@
 import os
 import re
 
-class TestCrawler:
-    def __init__(self):
-        pass
-
-
-class SpecCrawler:
-    # Can be a directory, list of files, single file, or specific tag.
-    enabledExtensions = {'.spec', '.feature', '.md', '.txt', '.allium'}
-    
-    # Tag Regex should match to the format:
-    # [feat or story or step]~[FEATURE NAME]~[REVISION NUMBER]
-    # Example Tag: feat~MyFeature~1
-    tagRegex = re.compile(r'(?<![A-Za-z0-9_~])(feat|story|step)~([A-Za-z0-9_]+)~([0-9]+)$')
-
-    def __init__(self, specDir, enabledExtensions=None):
-        self.specDir = specDir
-        print(f"SpecCrawler initialized with specDir: {specDir}")
-        if enabledExtensions:
-            print(f"Enabled extensions provided: {enabledExtensions}")
-            self.enabledExtensions.update(enabledExtensions)
-        
-        self.tagData = []
+class Crawler:
+    def __init__(self, directoryOrFiles):
+        self.directoryOrFiles = directoryOrFiles
         self.files = []
-
+        self.tagData = []
+        self.enabledExtensions = None  # This will be set in subclasses
+        # Tag Regex should match to the format:
+        # [feat or story or step]~[FEATURE NAME]~[REVISION NUMBER]
+        # Example Tag: feat~MyFeature~1
+        self.tagRegex = re.compile(r'(?<![A-Za-z0-9_~])(feat|story|step)~([A-Za-z0-9_]+)~([0-9]+)(?![A-Za-z0-9_~])')
+    
     def run(self):
         self.crawlFiles()
         if not self.files:
-            print("No spec files found. Exiting.")
+            print("No files found. Exiting.")
             return
         
         self.extractTags()
@@ -37,33 +24,18 @@ class SpecCrawler:
         return self.tagData
 
     def crawlFiles(self):
-        # Logic to crawl through the specDir and find spec files with enabled extensions.
+
         found_files = []
-        # If specDir is a directory, walk through it and yield files with enabled extensions.
-        if type(self.specDir) is str and os.path.isdir(self.specDir):
-            for root, dirs, files in os.walk(self.specDir):
+        if type(self.directoryOrFiles) is str and os.path.isdir(self.directoryOrFiles):
+            for root, dirs, files in os.walk(self.directoryOrFiles):
                 for file in files:
                     if any(file.endswith(ext) for ext in self.enabledExtensions):
                         found_files.append(os.path.join(root, file))
-        # If specDir is a list of files, yield those that have enabled extensions.
-        elif type(self.specDir) is list:
-            for file in self.specDir:
-                if os.path.isfile(file) and any(file.endswith(ext) for ext in self.enabledExtensions):
-                    found_files.append(file)
-        # If specDir is a single file, yield it if it has an enabled extension.
-        elif type(self.specDir) is str and os.path.isfile(self.specDir):
-            if any(self.specDir.endswith(ext) for ext in self.enabledExtensions):
-                found_files.append(self.specDir)
-        
-        print(f"Found spec files: {found_files}")
 
-        if type(self.specDir) is list and len(self.specDir) != len(found_files):
-            missing_files = set(self.specDir) - set(found_files)
-            print(f"Warning: The following specified files were not found or do not have enabled extensions: {missing_files}, continuing with the found files.")
-        
         self.files = found_files
-    
+
     def extractTags(self):
+        self.tagData = []
         for file in self.files:
             with open(file, 'r', encoding='utf-8-sig') as f:
                 file_tags = []
@@ -71,11 +43,59 @@ class SpecCrawler:
                     if '~' not in line:
                         continue
                     m = self.tagRegex.search(line.rstrip())
-                    if m:
+                    stripped = line.rstrip()
+                    matches = list(self.tagRegex.finditer(stripped))
+                    for m in matches:
                         tag_type, name, revision = m.groups()
                         file_tags.append({'filename': file, 'line': line_num, 'type': tag_type, 'name': name, 'revision': revision})
+                    
                 if file_tags:
                     self.tagData.extend(file_tags)
                     print(f"Found tags in {file}: {file_tags}")
                 else:
                     print(f"No tags found in {file}.")
+
+class TestCrawler(Crawler):
+    def __init__(self, testDir, enabledExtensions=None):
+        super().__init__(testDir)
+        print(f"TestCrawler initialized with testDir: {testDir}")
+        self.enabledExtensions = enabledExtensions or {'.py', '.js', '.java', '.cpp', '.cs', '.rb', '.go', '.ts', '.php', '.swift', '.kt', '.m', '.scala', '.sh', '.pl', '.r', '.lua', '.hs', '.erl', '.ex', '.exs'}
+        
+class SpecCrawler(Crawler):
+    # Can be a directory, list of files, single file, or specific tag.
+    def __init__(self, specDir, enabledExtensions=None):
+        super().__init__(specDir)
+        print(f"SpecCrawler initialized with specDir: {self.directoryOrFiles}")
+        self.enabledExtensions = {'.spec', '.feature', '.md', '.txt', '.allium'}
+        if enabledExtensions:
+            print(f"Enabled extensions provided: {enabledExtensions}")
+            self.enabledExtensions.update(enabledExtensions)
+
+    def crawlFiles(self):
+        # Logic to crawl through the specDir and find spec files with enabled extensions.
+        found_files = []
+        # If specDir is a directory, walk through it
+        if type(self.directoryOrFiles) is str and os.path.isdir(self.directoryOrFiles):
+            for root, dirs, files in os.walk(self.directoryOrFiles):
+                for file in files:
+                    if any(file.endswith(ext) for ext in self.enabledExtensions):
+                        found_files.append(os.path.join(root, file))
+        # If specDir is a list of files
+        elif type(self.directoryOrFiles) is list:
+            for file in self.directoryOrFiles:
+                if os.path.isfile(file) and any(file.endswith(ext) for ext in self.enabledExtensions):
+                    found_files.append(file)
+        # If specDir is a single file
+        elif type(self.directoryOrFiles) is str and os.path.isfile(self.directoryOrFiles):
+            if any(self.directoryOrFiles.endswith(ext) for ext in self.enabledExtensions):
+                found_files.append(self.directoryOrFiles)
+        
+        print(f"Found spec files: {found_files}")
+
+        if type(self.directoryOrFiles) is list and len(self.directoryOrFiles) != len(found_files):
+            missing_files = set(self.directoryOrFiles) - set(found_files)
+            print(f"Warning: The following specified files were not found or do not have enabled extensions: {missing_files}, continuing with the found files.")
+        
+        self.files = found_files
+    
+    

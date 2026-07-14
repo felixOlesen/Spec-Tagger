@@ -8,4 +8,4 @@ feature: Nested crawl
     scenario: Nested crawl
         Given a directory structure with nested directories and spec files
         When the SpecCrawler is run on the root directory
-        Then it should find all spec files in the nested directories #step~find_all_spec_files~3
+        Then it should find all spec files in the nested directories  // step~find_all_spec_files~4 step~find_all_spec_files~5

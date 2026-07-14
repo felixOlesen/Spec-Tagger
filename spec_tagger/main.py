@@ -22,12 +22,13 @@ def validate_args(args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--target_spec", default="features", help="Target dir/file/tag/list of files to read through")
+    parser.add_argument("--spec_file_extensions", default=None, help="Comma-separated list of allowed spec file extensions")
     parser.add_argument("--test_dir", default="tests", help="Directory/file/test to read through")
     parser.add_argument("--test_command", help="Command to run the test")
+    parser.add_argument("--test_extensions", default=None, help="Comma-separated list of allowed test file extensions")
     parser.add_argument("--report", help="Generate a report", action="store_true")
     parser.add_argument("--report_output", default=".", help="Directory to output the report")
     parser.add_argument("--report_type", default="json", help="Type of report to generate", choices=["json", "html", "stdout"])
-    parser.add_argument("--spec_file_extensions", default=None, help="Comma-separated list of allowed spec file extensions")
 
 
     args = parser.parse_args()
@@ -36,6 +37,9 @@ def main():
     print(f"Arguments: {args}")
     spec_crawler = SpecCrawler(args.target_spec, enabledExtensions=set(args.spec_file_extensions.split(',')) if args.spec_file_extensions else None)
     spec_tag_data = spec_crawler.run()
+
+    test_crawler = TestCrawler(args.test_dir, enabledExtensions=set(args.test_extensions.split(',')) if args.test_extensions else None)
+    test_tag_data = test_crawler.run()
 
 
 if __name__ == "__main__":
