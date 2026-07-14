@@ -47,28 +47,26 @@ class Crawler:
                     matches = list(self.tagRegex.finditer(stripped))
                     for m in matches:
                         tag_type, name, revision = m.groups()
-                        file_tags.append({'filename': file, 'line': line_num, 'type': tag_type, 'name': name, 'revision': revision})
+                        full_tag = m.group(0)
+                        file_tags.append({'filename': file, 'line': line_num, 'type': tag_type, 'name': name, 'revision': revision, 'full_tag': full_tag})
                     
                 if file_tags:
                     self.tagData.extend(file_tags)
-                    print(f"Found tags in {file}: {file_tags}")
+                    print(f"Found tags in {file}")
                 else:
                     print(f"No tags found in {file}.")
 
 class TestCrawler(Crawler):
     def __init__(self, testDir, enabledExtensions=None):
         super().__init__(testDir)
-        print(f"TestCrawler initialized with testDir: {testDir}")
         self.enabledExtensions = enabledExtensions or {'.py', '.js', '.java', '.cpp', '.cs', '.rb', '.go', '.ts', '.php', '.swift', '.kt', '.m', '.scala', '.sh', '.pl', '.r', '.lua', '.hs', '.erl', '.ex', '.exs'}
         
 class SpecCrawler(Crawler):
     # Can be a directory, list of files, single file, or specific tag.
     def __init__(self, specDir, enabledExtensions=None):
         super().__init__(specDir)
-        print(f"SpecCrawler initialized with specDir: {self.directoryOrFiles}")
         self.enabledExtensions = {'.spec', '.feature', '.md', '.txt', '.allium'}
         if enabledExtensions:
-            print(f"Enabled extensions provided: {enabledExtensions}")
             self.enabledExtensions.update(enabledExtensions)
 
     def crawlFiles(self):
@@ -90,8 +88,6 @@ class SpecCrawler(Crawler):
             if any(self.directoryOrFiles.endswith(ext) for ext in self.enabledExtensions):
                 found_files.append(self.directoryOrFiles)
         
-        print(f"Found spec files: {found_files}")
-
         if type(self.directoryOrFiles) is list and len(self.directoryOrFiles) != len(found_files):
             missing_files = set(self.directoryOrFiles) - set(found_files)
             print(f"Warning: The following specified files were not found or do not have enabled extensions: {missing_files}, continuing with the found files.")

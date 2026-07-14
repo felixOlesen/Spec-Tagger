@@ -41,6 +41,9 @@ def main():
     test_crawler = TestCrawler(args.test_dir, enabledExtensions=set(args.test_extensions.split(',')) if args.test_extensions else None)
     test_tag_data = test_crawler.run()
 
+    linker = Linker(spec_tag_data, test_tag_data)
+    linker.link_data()
+    linker.display_data()
 
 if __name__ == "__main__":
     main()
