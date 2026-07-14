@@ -35,7 +35,7 @@ def main():
     validate_args(args)
     print(f"Arguments: {args}")
     spec_crawler = SpecCrawler(args.target_spec, enabledExtensions=set(args.spec_file_extensions.split(',')) if args.spec_file_extensions else None)
-    spec_crawler.crawlFiles()
+    spec_tag_data = spec_crawler.run()
 
 
 if __name__ == "__main__":
