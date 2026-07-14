@@ -1,5 +1,9 @@
 import argparse
 import os
+from spec_test_linker import Linker
+from test_runner import Runner
+from report_generation import Generator
+from spec_test_crawler import SpecCrawler, TestCrawler
 
 def validate_args(args):
     if not args.test_command:
@@ -17,16 +21,22 @@ def validate_args(args):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--target_spec", default="features", help="Target dir/file/tag to read through")
+    parser.add_argument("--target_spec", default="features", help="Target dir/file/tag/list of files to read through")
     parser.add_argument("--test_dir", default="tests", help="Directory/file/test to read through")
     parser.add_argument("--test_command", help="Command to run the test")
     parser.add_argument("--report", help="Generate a report", action="store_true")
     parser.add_argument("--report_output", default=".", help="Directory to output the report")
     parser.add_argument("--report_type", default="json", help="Type of report to generate", choices=["json", "html", "stdout"])
+    parser.add_argument("--spec_file_extensions", default=None, help="Comma-separated list of allowed spec file extensions")
+
 
     args = parser.parse_args()
 
     validate_args(args)
+    print(f"Arguments: {args}")
+    spec_crawler = SpecCrawler(args.target_spec, enabledExtensions=set(args.spec_file_extensions.split(',')) if args.spec_file_extensions else None)
+    spec_crawler.crawlFiles()
+
 
 if __name__ == "__main__":
     main()
