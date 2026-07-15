@@ -35,15 +35,15 @@ def main():
 
     validate_args(args)
     print(f"Arguments: {args}")
-    spec_crawler = SpecCrawler(args.target_spec, enabledExtensions=set(args.spec_file_extensions.split(',')) if args.spec_file_extensions else None)
+    spec_crawler = SpecCrawler(args.target_spec, enabled_extensions==set(args.spec_file_extensions.split(',')) if args.spec_file_extensions else None)
     spec_tag_data = spec_crawler.run()
 
-    test_crawler = TestCrawler(args.test_dir, enabledExtensions=set(args.test_extensions.split(',')) if args.test_extensions else None)
+    test_crawler = TestCrawler(args.test_dir, enabled_extensions=set(args.test_extensions.split(',')) if args.test_extensions else None)
     test_tag_data = test_crawler.run()
 
     linker = Linker(spec_tag_data, test_tag_data)
-    links = linker.linkData()
-    linker.displayData()
+    links = linker.link_data()
+    linker.display_data()
 
     # runner = Runner(args.test_command, links)
     # runner.runTests()

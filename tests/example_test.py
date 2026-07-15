@@ -1,3 +1,4 @@
+# feat~no_func~1
 def test_find_all_spec_files():
     from spec_tagger.spec_test_crawler import SpecCrawler
     spec_crawler = SpecCrawler("features/", enabledExtensions={'.spec', '.feature', '.md', '.txt', '.allium'})
@@ -18,4 +19,3 @@ def test_spec_crawler_extract_tags():
     spec_crawler.crawlFiles()
     spec_crawler.extractTags()
     assert len(spec_crawler.tagData) > 0, "No tags extracted from the spec files."
-# feat~no_func~1

@@ -1,11 +1,15 @@
 import subprocess
+import shlex
 
 class Runner:
     def __init__(self, test_run_command, linked_tags):
         self.test_run_command = test_run_command
         self.linked_tags = linked_tags
 
-    def runTests(self):
+    def build_command(self):
+        pass
+
+    def run_tests(self):
 
         res = subprocess.run(self.test_run_command, shell=True, capture_output=True, text=True)
 
