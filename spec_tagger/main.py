@@ -23,8 +23,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--target_spec", default="features", help="Target dir/file/tag/list of files to read through")
     parser.add_argument("--spec_file_extensions", default=None, help="Comma-separated list of allowed spec file extensions")
-    parser.add_argument("--test_dir", default="tests", help="Directory/file/test to read through")
-    parser.add_argument("--test_command", help="Command to run the test")
+    parser.add_argument("--test_dir", default="tests", help="Root directory for all test files that need to be crawled through")
+    parser.add_argument("--test_command", help="Command to run the test.")
     parser.add_argument("--test_extensions", default=None, help="Comma-separated list of allowed test file extensions")
     parser.add_argument("--report", help="Generate a report", action="store_true")
     parser.add_argument("--report_output", default=".", help="Directory to output the report")
@@ -42,8 +42,11 @@ def main():
     test_tag_data = test_crawler.run()
 
     linker = Linker(spec_tag_data, test_tag_data)
-    linker.link_data()
-    linker.display_data()
+    links = linker.linkData()
+    linker.displayData()
+
+    runner = Runner(args.test_command, links)
+    runner.runTests()
 
 if __name__ == "__main__":
     main()

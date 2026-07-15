@@ -60,6 +60,9 @@ class TestCrawler(Crawler):
     def __init__(self, testDir, enabledExtensions=None):
         super().__init__(testDir)
         self.enabledExtensions = enabledExtensions or {'.py', '.js', '.java', '.cpp', '.cs', '.rb', '.go', '.ts', '.php', '.swift', '.kt', '.m', '.scala', '.sh', '.pl', '.r', '.lua', '.hs', '.erl', '.ex', '.exs'}
+
+    def extract_test_declarations():
+        pass
         
 class SpecCrawler(Crawler):
     # Can be a directory, list of files, single file, or specific tag.
