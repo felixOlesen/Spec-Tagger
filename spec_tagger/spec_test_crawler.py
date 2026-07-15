@@ -74,42 +74,50 @@ class TestCrawler(Crawler):
 
     def extract_and_assign_test_declarations(self):
         # get mapping of filenames to tag data 
+        LINE_STOP_CONDITION = 100 # Number of lines to go across before giving up
         fileToTag = {}
         for tag in self.tagData:
             if tag['filename'] not in fileToTag:
                 fileToTag[tag['filename']] = []
             fileToTag[tag['filename']].append(tag)
         
-        lineToTestSig = {}
         # loop through the files and being crawling after each line number to identify test function signatures
         for filename, tags in fileToTag.items():
             _, fileExtension = os.path.splitext(filename)
+            lineToTestSig = {}
             
             # find function signatures if that granularity is supported, otherwise, stick to file-level granularity
+            # if 'test_function' key is not present in tag, assum file-level, if it is but it's None, assume tag invalidity
             if fileExtension in FUNC_PATTERNS:
                 with open(filename, 'r', encoding='utf-8-sig') as f:
-                    func_pattern = FUNC_PATTERNS[fileExtension]
-                    skip_pattern = SKIP_PREFIXES[fileExtension]
-                    for tag in tags:
-                        if tag['line'] in lineToTestSig:
-                            tag['test_function'] = lineToTestSig[tag['line']]
-                        for line in itertools.islice(f, tag['line'], None):
-                            stripped = line.strip()
-                            if not stripped:
-                                continue
-                            if stripped.startswith(skip_pattern):
-                                continue
-                            
-                            m = func_pattern.match(line)
-                            if m:
-                                func_name = next((g for g in m.groups() if g is not None), None)
-                                tag['test_function'] = func_name
-                                lineToTestSig[tag['line']] = func_name
-            else:
-                for tag in tags:
-                    tag['test_function'] = None
+                    lines = f.readlines()
+                func_pattern = FUNC_PATTERNS[fileExtension]
+                skip_pattern = SKIP_PREFIXES[fileExtension]
 
-            
+                for tag in tags:
+                    if tag['line'] in lineToTestSig:
+                        tag['test_function'] = lineToTestSig[tag['line']]
+                        continue
+
+                    found = None
+                    # tag['line'] is 1-based
+                    for line in lines[tag['line'] : tag['line'] + LINE_STOP_CONDITION]:
+                        stripped = line.strip()
+                        if not stripped:
+                            continue
+                        m = func_pattern.match(line)
+                        if m:
+                            found = next((g for g in m.groups() if g is not None), None)
+                            break
+                        if stripped.startswith(skip_pattern):
+                            continue
+                        break  
+
+                    tag['test_function'] = found          # None means invalid tag
+                    lineToTestSig[tag['line']] = found
+                            
+
+                                    
 class SpecCrawler(Crawler):
     # Can be a directory, list of files, single file, or specific tag.
     def __init__(self, specDir, enabledExtensions=None):

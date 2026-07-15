@@ -5,6 +5,6 @@ feature: Nested crawl
 
     feat~test~1
     scenario: Nested crawl
-        Given a directory structure with nested directories and spec files
+        Given a directory structure with nested directories and spec files step~step_test~1
         When the SpecCrawler is run on the root directory 
         Then it should find all spec files in the nested directories 
