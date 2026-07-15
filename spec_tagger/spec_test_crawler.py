@@ -1,7 +1,8 @@
 
 import os
 import re
-
+import itertools
+from language_patterns import FUNC_PATTERNS, SKIP_PREFIXES
 class Crawler:
     def __init__(self, directoryOrFiles):
         self.directoryOrFiles = directoryOrFiles
@@ -61,9 +62,54 @@ class TestCrawler(Crawler):
         super().__init__(testDir)
         self.enabledExtensions = enabledExtensions or {'.py', '.js', '.java', '.cpp', '.cs', '.rb', '.go', '.ts', '.php', '.swift', '.kt', '.m', '.scala', '.sh', '.pl', '.r', '.lua', '.hs', '.erl', '.ex', '.exs'}
 
-    def extract_test_declarations():
-        pass
+    def run(self):
+        self.crawlFiles()
+        if not self.files:
+            print("No files found. Exiting.")
+            return
         
+        self.extractTags()
+        self.extract_and_assign_test_declarations()
+        return self.tagData
+
+    def extract_and_assign_test_declarations(self):
+        # get mapping of filenames to tag data 
+        fileToTag = {}
+        for tag in self.tagData:
+            if tag['filename'] not in fileToTag:
+                fileToTag[tag['filename']] = []
+            fileToTag[tag['filename']].append(tag)
+        
+        lineToTestSig = {}
+        # loop through the files and being crawling after each line number to identify test function signatures
+        for filename, tags in fileToTag.items():
+            _, fileExtension = os.path.splitext(filename)
+            
+            # find function signatures if that granularity is supported, otherwise, stick to file-level granularity
+            if fileExtension in FUNC_PATTERNS:
+                with open(filename, 'r', encoding='utf-8-sig') as f:
+                    func_pattern = FUNC_PATTERNS[fileExtension]
+                    skip_pattern = SKIP_PREFIXES[fileExtension]
+                    for tag in tags:
+                        if tag['line'] in lineToTestSig:
+                            tag['test_function'] = lineToTestSig[tag['line']]
+                        for line in itertools.islice(f, tag['line'], None):
+                            stripped = line.strip()
+                            if not stripped:
+                                continue
+                            if stripped.startswith(skip_pattern):
+                                continue
+                            
+                            m = func_pattern.match(line)
+                            if m:
+                                func_name = next((g for g in m.groups() if g is not None), None)
+                                tag['test_function'] = func_name
+                                lineToTestSig[tag['line']] = func_name
+            else:
+                for tag in tags:
+                    tag['test_function'] = None
+
+            
 class SpecCrawler(Crawler):
     # Can be a directory, list of files, single file, or specific tag.
     def __init__(self, specDir, enabledExtensions=None):

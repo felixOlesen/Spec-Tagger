@@ -45,8 +45,8 @@ def main():
     links = linker.linkData()
     linker.displayData()
 
-    runner = Runner(args.test_command, links)
-    runner.runTests()
+    # runner = Runner(args.test_command, links)
+    # runner.runTests()
 
 if __name__ == "__main__":
     main()
