@@ -1,9 +1,9 @@
 import argparse
 import os
-from spec_test_linker import Linker
-from test_runner import Runner
-from report_generation import Generator
-from spec_test_crawler import SpecCrawler, TestCrawler
+from spec_tagger.spec_test_linker import Linker
+from spec_tagger.test_runner import Runner
+from spec_tagger.report_generation import Generator
+from spec_tagger.spec_test_crawler import SpecCrawler, TestCrawler
 
 def validate_args(args):
     if not args.test_command:
@@ -35,7 +35,7 @@ def main():
 
     validate_args(args)
     print(f"Arguments: {args}")
-    spec_crawler = SpecCrawler(args.target_spec, enabled_extensions==set(args.spec_file_extensions.split(',')) if args.spec_file_extensions else None)
+    spec_crawler = SpecCrawler(args.target_spec, enabled_extensions=set(args.spec_file_extensions.split(',')) if args.spec_file_extensions else None)
     spec_tag_data = spec_crawler.run()
 
     test_crawler = TestCrawler(args.test_dir, enabled_extensions=set(args.test_extensions.split(',')) if args.test_extensions else None)
@@ -45,8 +45,8 @@ def main():
     links = linker.link_data()
     linker.display_data()
 
-    # runner = Runner(args.test_command, links)
-    # runner.runTests()
+    runner = Runner(args.test_command, links)
+    runner.run_tests()
 
 if __name__ == "__main__":
     main()

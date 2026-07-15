@@ -1,8 +1,7 @@
 
 import os
 import re
-import itertools
-from language_patterns import FUNC_PATTERNS, SKIP_PREFIXES
+from spec_tagger.language_patterns import FUNC_PATTERNS, SKIP_PREFIXES
 class Crawler:
     def __init__(self, directory_or_files):
         self.directory_or_files = directory_or_files

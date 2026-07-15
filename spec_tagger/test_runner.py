@@ -11,7 +11,7 @@ class Runner:
 
     def run_tests(self):
 
-        res = subprocess.run(self.test_run_command, shell=True, capture_output=True, text=True)
+        res = subprocess.run(self.test_run_command, capture_output=True, text=True)
 
         if res.returncode != 0:
             raise Exception("command returned non-zero exit code: " + str(res.returncode))
