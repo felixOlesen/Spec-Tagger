@@ -1,7 +1,8 @@
 class Linker:
-    def __init__(self, spec_data, test_data):
+    def __init__(self, spec_data, test_data, verbose):
         self.spec_data = spec_data
         self.test_data = test_data
+        self.verbose = verbose
         self.invalid_tags = []
         self.linked_tags = {}
     # Cases to consider:
@@ -15,24 +16,28 @@ class Linker:
     # 8. Spec and test have the same tag, but the test has a higher revision number than the spec.
 
     def display_data(self):
-        print("Spec Data:")
-        for tag in self.spec_data:
-            print(tag)
-        print("\nTest Data:")
-        for tag in self.test_data:
-            print(tag)
+        if self.spec_data:
+            print("Spec Data:")
+            for tag in self.spec_data:
+                print(tag)
+        if self.test_data:
+            print("\nTest Data:")
+            for tag in self.test_data:
+                print(tag)
 
         # Display linked tags
-        print("\nLinked Tags:")
-        for key, value in self.linked_tags.items():
-            print(f"Spec Tag: {value['spec_tag']}")
-            for test_tag in value['test_tags']:
-                print(f"  Test Tag: {test_tag}")
+        if self.linked_tags:
+            print("\nLinked Tags:")
+            for key, value in self.linked_tags.items():
+                print(f"Spec Tag: {value['spec_tag']}")
+                for test_tag in value['test_tags']:
+                    print(f"  Test Tag: {test_tag}")
 
         # Display invalid tags
-        print("\nInvalid Tags:")
-        for invalid in self.invalid_tags:
-            print(invalid)
+        if self.invalid_tags:
+            print("\nInvalid Tags:")
+            for invalid in self.invalid_tags:
+                print(invalid)
         
     
     def link_data(self):
@@ -48,7 +53,8 @@ class Linker:
                 self.register_invalid_tag(test_tag, 'No test function was found following the tag.')
             else:
                 self.linked_tags[test_tag['type'] + '~' + test_tag['name']]['test_tags'].append(test_tag)
-                print(f"Linked test tag {test_tag['full_tag']} to spec tag {self.linked_tags[test_tag['type'] + '~' + test_tag['name']]['spec_tag']['full_tag']}")
+                if self.verbose:
+                    print(f"Linked test tag {test_tag['full_tag']} to spec tag {self.linked_tags[test_tag['type'] + '~' + test_tag['name']]['spec_tag']['full_tag']}")
 
         # check revision numbers and add invalid tags for mismatches
         for key, value in self.linked_tags.items():

@@ -3,8 +3,9 @@ import os
 import re
 from spec_tagger.language_patterns import FUNC_PATTERNS, SKIP_PREFIXES
 class Crawler:
-    def __init__(self, directory_or_files):
+    def __init__(self, verbose, directory_or_files):
         self.directory_or_files = directory_or_files
+        self.verbose = verbose
         self.files = []
         self.tag_data = []
         self.enabled_extensions = None  # This will be set in subclasses
@@ -52,19 +53,22 @@ class Crawler:
                     
                 if file_tags:
                     self.tag_data.extend(file_tags)
-                    print(f"Found tags in {file}")
+                    if self.verbose:
+                        print(f"Found tags in {file}")
                 else:
-                    print(f"No tags found in {file}.")
+                    if self.verbose:
+                        print(f"No tags found in {file}.")
 
 class TestCrawler(Crawler):
-    def __init__(self, test_dir, enabled_extensions=None):
-        super().__init__(test_dir)
+    def __init__(self, verbose, test_dir, enabled_extensions=None):
+        super().__init__(verbose, test_dir)
         self.enabled_extensions = enabled_extensions or {'.py', '.js', '.java', '.cpp', '.cs', '.rb', '.go', '.ts', '.php', '.swift', '.kt', '.m', '.scala', '.sh', '.pl', '.r', '.lua', '.hs', '.erl', '.ex', '.exs'}
 
     def run(self):
         self.crawl_files()
         if not self.files:
-            print("No files found. Exiting.")
+            if self.verbose:
+                print("No files found. Exiting.")
             return
         
         self.extract_tags()
@@ -119,8 +123,8 @@ class TestCrawler(Crawler):
                                     
 class SpecCrawler(Crawler):
     # Can be a directory, list of files, single file, or specific tag.
-    def __init__(self, spec_dir, enabled_extensions=None):
-        super().__init__(spec_dir)
+    def __init__(self, verbose, spec_dir, enabled_extensions=None):
+        super().__init__(verbose, spec_dir)
         self.enabled_extensions = {'.spec', '.feature', '.md', '.txt', '.allium'}
         if enabled_extensions:
             self.enabled_extensions.update(enabled_extensions)

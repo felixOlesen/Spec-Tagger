@@ -24,29 +24,34 @@ def main():
     parser.add_argument("--target_spec", default="features", help="Target dir/file/tag/list of files to read through")
     parser.add_argument("--spec_file_extensions", default=None, help="Comma-separated list of allowed spec file extensions")
     parser.add_argument("--test_dir", default="tests", help="Root directory for all test files that need to be crawled through")
-    parser.add_argument("--test_command", help="Command to run the test.")
+    parser.add_argument("--test_command", help="Command to run the test, example: 'pytest {tests}'")
+    parser.add_argument("--test_format", default='{file}::{name}', help='How a single test is addressed on the CLI. Placeholders: {file} = test file path, {name} = test function name.')    
+    parser.add_argument("--test_join", default=None, help='If set, join all test targets with this separator into ONE argument (e.g. "|" for go test -run) instead of passing them separately.')
     parser.add_argument("--test_extensions", default=None, help="Comma-separated list of allowed test file extensions")
+    parser.add_argument("--dry_run", action="store_true", help="test the spec links without running the test code.")
     parser.add_argument("--report", help="Generate a report", action="store_true")
     parser.add_argument("--report_output", default=".", help="Directory to output the report")
     parser.add_argument("--report_type", default="json", help="Type of report to generate", choices=["json", "html", "stdout"])
+    parser.add_argument("--verbose", action="store_true", help="Enables verbose printing")
 
 
     args = parser.parse_args()
 
     validate_args(args)
     print(f"Arguments: {args}")
-    spec_crawler = SpecCrawler(args.target_spec, enabled_extensions=set(args.spec_file_extensions.split(',')) if args.spec_file_extensions else None)
+    spec_crawler = SpecCrawler(args.verbose, args.target_spec, enabled_extensions=set(args.spec_file_extensions.split(',')) if args.spec_file_extensions else None)
     spec_tag_data = spec_crawler.run()
 
-    test_crawler = TestCrawler(args.test_dir, enabled_extensions=set(args.test_extensions.split(',')) if args.test_extensions else None)
+    test_crawler = TestCrawler(args.verbose, args.test_dir, enabled_extensions=set(args.test_extensions.split(',')) if args.test_extensions else None)
     test_tag_data = test_crawler.run()
 
-    linker = Linker(spec_tag_data, test_tag_data)
+    linker = Linker(spec_tag_data, test_tag_data, args.verbose)
     links = linker.link_data()
-    linker.display_data()
+    if args.verbose:
+        linker.display_data()
 
-    runner = Runner(args.test_command, links)
-    runner.run_tests()
+    runner = Runner(args.test_command, args.test_format, args.test_join, links, args.verbose)
+    runner.run_tests(args.dry_run)
 
 if __name__ == "__main__":
     main()
