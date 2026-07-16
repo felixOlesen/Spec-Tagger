@@ -97,6 +97,8 @@ class Runner:
                 print(f"  {tag_str}: ", "\033[91m {}\033[00m".format(outcome['result'].upper()), f" Test Count: {outcome['test_count']}")
             elif outcome['result'] == 'passed':
                 print(f"  {tag_str}: ", "\033[92m {}\033[00m".format(outcome['result'].upper()), f" Test Count: {outcome['test_count']}")
+            elif outcome['result'] == 'untested':
+                print(f"  {tag_str}: ", "\033[93m {}\033[00m".format(outcome['result'].upper()), f" Test Count: {outcome['test_count']}")
 
         return 1 if failed else 0
     
