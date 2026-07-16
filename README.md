@@ -47,7 +47,7 @@ pip install -e .
 
 This installs the `spectagger` CLI command via the entry point declared in [pyproject.toml](pyproject.toml).
 
-> **Note:** [requirements.txt](requirements.txt) is a `conda list --explicit`-style export of a development environment (osx-arm64, pytest, etc.), not a pip dependency list. It's only relevant if you're contributing to Spec Tagger itself and want to reproduce that conda environment — it is not needed to install or run the tool.
+> **Note:** [requirements.txt](requirements.txt) is a `conda list --explicit`-style export of a development environment, not a pip dependency list. It's only relevant if you're contributing to Spec Tagger itself and want to reproduce that conda environment — it is not needed to install or run the tool.
 
 ## Usage
 
