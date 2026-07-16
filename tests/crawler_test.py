@@ -35,3 +35,10 @@ def test_finds_spec_file():
 
     assert(files[0] == single_file)
 
+# feat~no_func~1
+def test_example():
+    assert(True)
+
+# feat~no_func~1
+def test_example_2():
+    assert(True)
