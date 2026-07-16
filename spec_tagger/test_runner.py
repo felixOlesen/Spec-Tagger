@@ -2,33 +2,35 @@ import subprocess
 import shlex
 
 class Runner:
-    def __init__(self, test_run_command, test_format, test_join, linked_tags, verbose):
+    def __init__(self, test_run_command: str, test_format: str, test_join: str, linked_tags: dict, verbose: bool):
         self.test_run_command = test_run_command
         self.test_format = test_format
         self.linked_tags = linked_tags
         self.test_join = test_join
         self.verbose = verbose
 
-    def format_target(self, tag):
+    def format_target(self, tag: dict):
         if 'test_function' not in tag:
             return tag['filename']
         return self.test_format.format(file=tag['filename'], name=tag['test_function'])
 
-    def build_targets_for_link(self, link):
+    def build_targets_for_link(self, link: dict) -> list:
         # Dedupe and prune within this one spec tag's tests.
         targets = []
         seen = set()
         file_level = set()
 
         for test_tag in link['test_tags']:
-            if test_tag.get('test_function') is None:
+            if 'test_function' not in test_tag:
                 file_level.add(test_tag['filename'])
 
         for test_tag in link['test_tags']:
+            # Prune using the tag's own data — no string parsing.
+            is_file_target = test_tag.get('test_function') is None
+            if not is_file_target and test_tag['filename'] in file_level:
+                continue                  # whole file already runs, skip
+
             target = self.format_target(test_tag)
-            file_part = target.split('::')[0]
-            if target not in file_level and file_part in file_level:
-                continue                      # whole file already runs, skip
             if target not in seen:
                 seen.add(target)
                 targets.append(target)
@@ -37,7 +39,7 @@ class Runner:
             targets = [self.test_join.join(targets)]
         return targets
     
-    def build_command_for_targets(self, targets):
+    def build_command_for_targets(self, targets: list) -> list:
         cmd = []
         for part in shlex.split(self.test_run_command):
             if part == '{tests}' or part == '{files}':
@@ -47,23 +49,11 @@ class Runner:
                 cmd.append(part)
         return cmd
 
-    def report_coverage(self):
-        untested = []
-        for tag_str, link in self.linked_tags.items():
-            if len(link['test_tags']) == 0:
-                untested.append(tag_str)
-                spec = link['spec_tag']
-                if self.verbose:
-                    print(f"Warning: {tag_str} ({spec['file']}:{spec['line']}) "
-                        f"has no linked tests.")
-        return untested
-
-    def run_tests(self, dry_run=False):
+    def run_tests(self, dry_run: bool=False) -> int:
         results = {}          # tag_str -> 'passed' | 'failed' | 'untested'
-
-        for tag_str, link in self.linked_tags.items():
+        for _, link in self.linked_tags.items():
             targets = self.build_targets_for_link(link)
-
+            tag_str = link['spec_tag']['full_tag']
             if not targets:
                 spec = link['spec_tag']
                 if self.verbose:
@@ -77,20 +67,22 @@ class Runner:
             if dry_run:
                 print(f"{tag_str}:")
                 for target in targets:
-                    print(f"  → {target}")
+                    print(f"  : {target}")
                 print("  Command:", ' '.join(shlex.quote(p) for p in cmd))
                 continue
 
             print(f"Running tests for {tag_str} ...")
             res = subprocess.run(cmd, capture_output=True, text=True)
-
+            results[tag_str] = {'result':'', 'test_count':len(targets), 'output':'', 'error':''}
             if res.returncode == 0:
-                results[tag_str] = 'passed'
+                results[tag_str]['result'] = 'passed' 
             else:
-                results[tag_str] = 'failed'
+                results[tag_str]['result'] = 'failed' 
                 if res.stdout and self.verbose:
+                    results[tag_str]['output'] = res.stdout
                     print(res.stdout)
                 if res.stderr and self.verbose:
+                    results[tag_str]['error'] = res.stderr
                     print(res.stderr)
 
         if dry_run:
@@ -100,8 +92,12 @@ class Runner:
         print("\n===== Spec tag results =====")
         failed = 0
         for tag_str, outcome in results.items():
-            print(f"  {tag_str}: {outcome.upper()}")
-            if outcome == 'failed':
+            if outcome['result'] == 'failed':
                 failed += 1
+                print(f"  {tag_str}: ", "\033[91m {}\033[00m".format(outcome['result'].upper()), f" Test Count: {outcome['test_count']}")
+            elif outcome['result'] == 'passed':
+                print(f"  {tag_str}: ", "\033[92m {}\033[00m".format(outcome['result'].upper()), f" Test Count: {outcome['test_count']}")
 
         return 1 if failed else 0
+    
+    

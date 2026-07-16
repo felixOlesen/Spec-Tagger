@@ -77,7 +77,7 @@ class TestCrawler(Crawler):
 
     def extract_and_assign_test_declarations(self):
         # get mapping of filenames to tag data 
-        LINE_STOP_CONDITION = 100 # Number of lines to go across before giving up
+        LINE_STOP_CONDITION = 20 # Number of lines to go across before giving up
         file_to_tag = {}
         for tag in self.tag_data:
             if tag['filename'] not in file_to_tag:
@@ -125,7 +125,7 @@ class SpecCrawler(Crawler):
     # Can be a directory, list of files, single file, or specific tag.
     def __init__(self, verbose, spec_dir, enabled_extensions=None):
         super().__init__(verbose, spec_dir)
-        self.enabled_extensions = {'.spec', '.feature', '.md', '.txt', '.allium'}
+        self.enabled_extensions = {'.spec', '.feature', '.md', '.txt'}
         if enabled_extensions:
             self.enabled_extensions.update(enabled_extensions)
 
