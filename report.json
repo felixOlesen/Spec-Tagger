@@ -1,0 +1,42 @@
+{
+  "test_results": {
+    "feat~spec_crawling~1": {
+      "result": "passed",
+      "test_count": 1,
+      "output": "",
+      "error": ""
+    },
+    "story~spec_crawl_directory~1": {
+      "result": "passed",
+      "test_count": 1,
+      "output": "",
+      "error": ""
+    },
+    "story~spec_crawl_file_list~1": {
+      "result": "passed",
+      "test_count": 1,
+      "output": "",
+      "error": ""
+    },
+    "story~spec_crawl_file~1": {
+      "result": "passed",
+      "test_count": 1,
+      "output": "",
+      "error": ""
+    },
+    "feat~no_func~1": {
+      "result": "passed",
+      "test_count": 2,
+      "output": "",
+      "error": ""
+    }
+  },
+  "invalid_tags": [
+    {
+      "tag": "feat~error_feature~1",
+      "file": "features/report_generation.feature",
+      "line": 1,
+      "reason": "Spec tag has no corresponding test tag."
+    }
+  ]
+}

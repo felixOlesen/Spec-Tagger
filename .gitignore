@@ -222,3 +222,6 @@ __marimo__/
 # VS Code
 .vscode/
 .vscode/*
+
+# Pyright
+pyrightconfig.json
