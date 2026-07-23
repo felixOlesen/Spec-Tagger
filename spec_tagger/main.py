@@ -111,7 +111,12 @@ def main():
 
     if args.report:
         generator = Generator(
-            args.report_output, args.report_type, test_results, invalid_tags, links
+            args.report_output,
+            args.report_type,
+            test_results,
+            invalid_tags,
+            links,
+            args.verbose,
         )
         generator.generate_report()
 
