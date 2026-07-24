@@ -65,7 +65,7 @@ def main():
     )
     parser.add_argument("--report", help="Generate a report", action="store_true")
     parser.add_argument(
-        "--report_output", default=".", help="Directory to output the report"
+        "--report_output", default="report", help="Directory to output the report"
     )
     parser.add_argument(
         "--report_type",
@@ -82,8 +82,8 @@ def main():
     validate_args(args)
     print(f"Arguments: {args}")
     spec_crawler = SpecCrawler(
-        args.verbose,
-        args.target_spec,
+        verbose=args.verbose,
+        spec_dir=args.target_spec,
         enabled_extensions=set(args.spec_file_extensions.split(","))
         if args.spec_file_extensions
         else None,
@@ -91,32 +91,43 @@ def main():
     spec_tag_data = spec_crawler.run()
 
     test_crawler = TestCrawler(
-        args.verbose,
-        args.test_dir,
+        verbose=args.verbose,
+        test_dir=args.test_dir,
         enabled_extensions=set(args.test_extensions.split(","))
         if args.test_extensions
         else None,
     )
     test_tag_data = test_crawler.run()
 
-    linker = Linker(spec_tag_data, test_tag_data, args.verbose)
-    links, invalid_tags = linker.link_data()
+    linker = Linker(
+        spec_data=spec_tag_data, test_data=test_tag_data, verbose=args.verbose
+    )
+    linked_data = linker.link_data()
+    links = None
+    invalid_tags = None
+    if linked_data:
+        links, invalid_tags = linked_data
+
     if args.verbose:
         linker.display_data()
 
     runner = Runner(
-        args.test_command, args.test_format, args.test_join, links, args.verbose
+        test_run_command=args.test_command,
+        test_format=args.test_format,
+        test_join=args.test_join,
+        linked_tags=links,
+        verbose=args.verbose,
     )
     test_results = runner.run_tests(args.dry_run)
 
     if args.report:
         generator = Generator(
-            args.report_output,
-            args.report_type,
-            test_results,
-            invalid_tags,
-            links,
-            args.verbose,
+            report_output_dir=args.report_output,
+            report_type=args.report_type,
+            test_output=test_results,
+            invalid_tags=invalid_tags,
+            successful_links=links,
+            verbose=args.verbose,
         )
         generator.generate_report()
 

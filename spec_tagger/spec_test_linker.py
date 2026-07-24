@@ -1,5 +1,5 @@
 class Linker:
-    def __init__(self, spec_data: dict, test_data: dict, verbose: bool):
+    def __init__(self, spec_data: list | None, test_data: list | None, verbose: bool):
         self.spec_data = spec_data
         self.test_data = test_data
         self.verbose = verbose
@@ -29,7 +29,7 @@ class Linker:
         # Display linked tags
         if self.linked_tags:
             print("\nLinked Tags:")
-            for key, value in self.linked_tags.items():
+            for _, value in self.linked_tags.items():
                 print(f"Spec Tag: {value['spec_tag']}")
                 for test_tag in value["test_tags"]:
                     print(f"  Test Tag: {test_tag}")
@@ -40,14 +40,22 @@ class Linker:
             for invalid in self.invalid_tags:
                 print(invalid)
 
-    def link_data(self) -> tuple[dict, list]:
+    def link_data(self) -> tuple[dict, list] | None:
         self.check_tag_frequency_and_revisions(self.spec_data)
+
+        if not self.spec_data:
+            print("Warning spec data found to be null on run.")
+            return
 
         for spec_tag in self.spec_data:
             self.linked_tags[spec_tag["type"] + "~" + spec_tag["name"]] = {
                 "spec_tag": spec_tag,
                 "test_tags": [],
             }
+
+        if not self.test_data:
+            print("Warning test data found to be null on run.")
+            return
 
         for test_tag in self.test_data:
             if test_tag["type"] + "~" + test_tag["name"] not in self.linked_tags:

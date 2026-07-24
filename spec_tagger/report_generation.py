@@ -12,9 +12,9 @@ class Generator:
         self,
         report_output_dir: str,
         report_type: str,
-        test_output: dict,
-        invalid_tags: list,
-        successful_links: dict,
+        test_output: dict | None,
+        invalid_tags: list | None,
+        successful_links: dict | None,
         verbose: bool,
     ):
         self.report_output_dir = report_output_dir
@@ -24,20 +24,21 @@ class Generator:
         self.successful_links = successful_links
         self.verbose = verbose
         self.output_object = {}
+        self.report_name = "report.json"
 
     def generate_report(self):
-        self.construct_report_object()
+        self._construct_report_object()
         match self.report_type:
             case "json":
-                self.generate_json()
+                self._generate_json()
             case "html":
-                self.generate_html()
+                self._generate_html()
             case "stdout":
-                self.generate_stdout()
+                self._generate_stdout()
             case _:
                 print("Invalid report type given.")
 
-    def construct_report_object(self):
+    def _construct_report_object(self):
         """Object Strucutre
 
         Test Results
@@ -59,8 +60,17 @@ class Generator:
                 Reason
 
         """
+        if not self.successful_links:
+            print("Warning tag links found to be null on report generation.")
+            return
+
+        if not self.test_output:
+            print("Warning test_output found to be null on test generation")
+            return
+
         self.output_object["test_results"] = self.test_output
         self.output_object["invalid_tags"] = self.invalid_tags
+
         for _, links in self.successful_links.items():
             full_tag = links["spec_tag"]["full_tag"]
             if full_tag in self.output_object["test_results"]:
@@ -72,16 +82,32 @@ class Generator:
             print("Constructed Report Object:")
             print(self.output_object)
 
-    def generate_json(self):
-        location = os.path.join(self.report_output_dir, "report.json")
+    def _generate_json(self):
+        location = os.path.join(self.report_output_dir, self.report_name)
         with open(location, "w") as f:
             json.dump(self.output_object, f)
 
-    def generate_html(self):
-        pass
+    def _generate_html(self):
+        os.makedirs(self.report_output_dir, exist_ok=True)
 
-    def generate_stdout(self):
+        location = os.path.join(self.report_output_dir, "data.js")
+        with open(location, "w") as f:
+            f.write(f"window.REPORT_DATA = {json.dumps(self.output_object)};")
+
+        self._copy_template_file("index.html")
+        self._copy_template_file("style.css")
+        self._copy_template_file("script.js")
+
+        print(f"Report successfully saved to {os.path.abspath(self.report_output_dir)}")
+
+    def _generate_stdout(self):
         pass
 
     def _copy_template_file(self, file_name):
-        pass
+        template_content = (
+            pkg_resources.files("spec_tagger.templates").joinpath(file_name).read_text()
+        )
+
+        destination = os.path.join(self.report_output_dir, file_name)
+        with open(destination, "w", encoding="utf-8") as f:
+            f.write(template_content)

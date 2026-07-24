@@ -8,7 +8,7 @@ class Runner:
         test_run_command: str,
         test_format: str,
         test_join: str,
-        linked_tags: dict,
+        linked_tags: dict | None,
         verbose: bool,
     ):
         self.test_run_command = test_run_command
@@ -57,8 +57,13 @@ class Runner:
                 cmd.append(part)
         return cmd
 
-    def run_tests(self, dry_run: bool = False) -> int:
+    def run_tests(self, dry_run: bool = False) -> dict | None:
         results = {}  # tag_str -> 'passed' | 'failed' | 'untested'
+
+        if not self.linked_tags:
+            print("Warning linked tags found to be null on run, exiting.")
+            return
+
         for _, link in self.linked_tags.items():
             targets = self.build_targets_for_link(link)
             tag_str = link["spec_tag"]["full_tag"]
@@ -101,7 +106,7 @@ class Runner:
                     print(res.stderr)
 
         if dry_run:
-            return 0
+            return {}
 
         # Summary: the traceability report.
         print("\n===== Spec tag results =====")
@@ -128,4 +133,3 @@ class Runner:
                 )
         print(results)
         return results
-
