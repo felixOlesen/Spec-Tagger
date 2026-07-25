@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function renderTestResults(results) {
   const container = document.getElementById("results-container");
   const specItems = Object.entries(results);
+  console.log(specItems);
 
   if (specItems.length === 0) {
     container.innerHTML = "<p class='meta-info'>No tests executed.</p>";
@@ -26,44 +27,53 @@ function renderTestResults(results) {
     card.className = "card";
 
     // Determine overall status based on presence of failures or errors
-    const hasFailures = details.Failures || details.Error;
-    const statusClass = hasFailures ? "status-fail" : "status-pass";
+    const test_result = details.result;
 
+    var test_function_names = ``
+    details.test_tags.forEach(
+      tag => {
+        test_function_names += `<li>${tag.filename} : ${tag.test_function}</li>`
+      }
+    )
+
+    console.log(test_function_names)
     // Build the inner HTML template safely
     let htmlContent = `
             <h3>${escapeHtml(specName)}</h3>
             <div class="meta-info">
-                <div>Line Number: ${details["line"] || "N/A"}</div>
-                <div>Execution Time: ${details["exec_time"] || "N/A"}</div>
-                <div>Test Coverage: ${details["coverage"] || "N/A"}</div>
+                <div>Spec File: ${details.spec_tag.filename || "N/A"}</div>
+                <div>Line Number: ${details.spec_tag.line || "N/A"}</div>
+                <div>Execution Time: ${details.exec_time || "N/A"}</div>
+                <div>Test Count: ${details.test_count || "N/A"}</div>
+                <div>Tests: <ul> ${test_function_names} </ul> </div> 
             </div>
             ${details["Spec snapshot"] ? `<strong>Snapshot:</strong><code class="code-snippet">${escapeHtml(details["Spec snapshot"])}</code>` : ""}
         `;
 
     // Append execution blocks dynamically
-    if (details.Passes) {
+    if (test_result == "passed") {
       htmlContent += `
                 <div class="status-block status-pass">
                     <strong>Passed</strong> 
-                    <div>Coverage: ${details.Passes.Coverage || "N/A"}</div>
+                    <div>Coverage: ${"N/A"}</div>
                 </div>
             `;
     }
 
-    if (details.Failures) {
+    if (test_result == "failed") {
       htmlContent += `
                 <div class="status-block status-fail">
                     <strong>Failed</strong>
-                    <code class="code-snippet">${escapeHtml(details.Failures.Output || "Unknown failure")}</code>
+                    <code class="code-snippet">${escapeHtml(details.output || "Unknown failure")}</code>
                 </div>
             `;
     }
 
-    if (details.Error) {
+    if (details.error) {
       htmlContent += `
                 <div class="status-block status-fail">
                     <strong>Error</strong>
-                    <code class="code-snippet">${escapeHtml(details.Error.Output || "Unknown error")}</code>
+                    <code class="code-snippet">${escapeHtml(details.error || "Unknown error")}</code>
                 </div>
             `;
     }

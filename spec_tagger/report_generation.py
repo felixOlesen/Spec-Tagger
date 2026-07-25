@@ -74,7 +74,12 @@ class Generator:
         for _, links in self.successful_links.items():
             full_tag = links["spec_tag"]["full_tag"]
             if full_tag in self.output_object["test_results"]:
-                self.output_object["test_results"][full_tag]["links"] = links
+                self.output_object["test_results"][full_tag]["spec_tag"] = links[
+                    "spec_tag"
+                ]
+                self.output_object["test_results"][full_tag]["test_tags"] = links[
+                    "test_tags"
+                ]
             else:
                 print("Warning, links found with no connected test results.")
 

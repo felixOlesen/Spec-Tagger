@@ -1,5 +1,6 @@
 import subprocess
 import shlex
+import time
 
 
 class Runner:
@@ -87,12 +88,16 @@ class Runner:
                 continue
 
             print(f"Running tests for {tag_str} ...")
+            start_time = time.perf_counter()
             res = subprocess.run(cmd, capture_output=True, text=True)
+            end_time = time.perf_counter()
+
             results[tag_str] = {
                 "result": "",
                 "test_count": len(targets),
                 "output": "",
                 "error": "",
+                "exec_time": f"{(end_time - start_time):.6f} Seconds",
             }
             if res.returncode == 0:
                 results[tag_str]["result"] = "passed"
