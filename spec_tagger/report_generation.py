@@ -106,7 +106,23 @@ class Generator:
         print(f"Report successfully saved to {os.path.abspath(self.report_output_dir)}")
 
     def _generate_stdout(self):
-        pass
+        print("\n---------- Test Results ----------")
+        for _, data in self.output_object["test_results"].items():
+            print(f"\n{data['spec_tag']['full_tag']}: {data['result']}")
+            print(f"Spec File: {data['spec_tag']['filename']}")
+            print(f"Line Number: {data['spec_tag']['line']}")
+            print(f"Execution Time: {data['exec_time']}")
+            print(f"Test Count: {data['test_count']}")
+            print("Tests:")
+            for test_tag in data["test_tags"]:
+                print(f"- {test_tag['filename']} : {test_tag['test_function']}")
+
+        print("\n---------- Invalid Tags ----------")
+        for tag in self.output_object["invalid_tags"]:
+            print(f"\nTag: {tag['tag']}")
+            print(f"Reason: {tag['reason']}")
+
+        print("\n")
 
     def _copy_template_file(self, file_name):
         template_content = (
