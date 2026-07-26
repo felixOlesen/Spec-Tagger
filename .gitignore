@@ -225,3 +225,7 @@ __marimo__/
 
 # Pyright
 pyrightconfig.json
+
+# Spec Tagger
+report/
+report/*
