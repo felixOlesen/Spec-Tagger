@@ -88,7 +88,8 @@ class Linker:
                 for test_tag in test_tags:
                     if spec_tag["revision"] != test_tag["revision"]:
                         self.register_invalid_tag(
-                            test_tag, "Revision number mismatch with spec tag."
+                            test_tag,
+                            f"Revision number mismatch with spec tag, spec tag: {spec_tag['revision']} test tag: {test_tag['revision']}",
                         )
                         # if the revision number of the test tag does not match the spec tag, remove it from the list of test tags
                         self.linked_tags[key]["test_tags"].remove(test_tag)

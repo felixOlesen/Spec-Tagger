@@ -106,16 +106,42 @@ class Generator:
         print(f"Report successfully saved to {os.path.abspath(self.report_output_dir)}")
 
     def _generate_stdout(self):
+        GREEN = "\033[92m"
+        RED = "\033[91m"
+        YELLOW = "\033[93m"
+        RESET = "\033[00m"
+
         print("\n---------- Test Results ----------")
         for _, data in self.output_object["test_results"].items():
-            print(f"\n{data['spec_tag']['full_tag']}: {data['result']}")
-            print(f"Spec File: {data['spec_tag']['filename']}")
-            print(f"Line Number: {data['spec_tag']['line']}")
+            spec_tag = data["spec_tag"]
+            test_count = data["test_count"]
+            pass_count = data["pass_count"]
+
+            if test_count == 0:
+                status = f"{YELLOW}UNTESTED{RESET}"
+            elif pass_count == test_count:
+                status = f"{GREEN}PASSED{RESET}"
+            else:
+                status = f"{RED}FAILED{RESET}"
+
+            print(f"\n{spec_tag['full_tag']}: {status}")
+            print(f"Spec File: {spec_tag['filename']}")
+            print(f"Line Number: {spec_tag['line']}")
             print(f"Execution Time: {data['exec_time']}")
-            print(f"Test Count: {data['test_count']}")
-            print("Tests:")
+            print(f"Test Count: {test_count}")
+            print(f"Overall: {pass_count}/{test_count} passed")
+
+            print("Linked Tests:")
             for test_tag in data["test_tags"]:
                 print(f"- {test_tag['filename']} : {test_tag['test_function']}")
+
+            if data["results"]:
+                print("Results:")
+                for result in data["results"]:
+                    color = GREEN if result["outcome"] == "passed" else RED
+                    print(f"  {color}{result['outcome'].upper()}{RESET}: {result['cmd']}")
+                    if result["error"]:
+                        print(f"    Error: {result['error']}")
 
         print("\n---------- Invalid Tags ----------")
         for tag in self.output_object["invalid_tags"]:

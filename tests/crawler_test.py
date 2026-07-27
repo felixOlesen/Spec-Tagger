@@ -43,7 +43,7 @@ def test_finds_spec_file():
     assert files[0] == single_file
 
 
-# feat~no_func~1
+# feat~no_func~2
 def test_example():
     assert True
 

@@ -49,6 +49,11 @@ def main():
         help="How a single test is addressed on the CLI. Placeholders: {file} = test file path, {name} = test function name.",
     )
     parser.add_argument(
+        "--one_by_one",
+        action="store_true",
+        help="Use in case you want to run each test one-by-one, CAUTION: slows down testing significantly due to multiple subprocess calls.",
+    )
+    parser.add_argument(
         "--test_join",
         default=None,
         help='If set, join all test targets with this separator into ONE argument (e.g. "|" for go test -run) instead of passing them separately.',
@@ -116,11 +121,12 @@ def main():
         test_format=args.test_format,
         test_join=args.test_join,
         linked_tags=links,
+        one_by_one=args.one_by_one,
         verbose=args.verbose,
     )
     test_results = runner.run_tests(args.dry_run)
 
-    if args.report:
+    if args.report and not args.dry_run:
         generator = Generator(
             report_output_dir=args.report_output,
             report_type=args.report_type,
