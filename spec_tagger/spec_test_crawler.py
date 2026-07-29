@@ -1,6 +1,6 @@
 import os
 import re
-from spec_tagger.language_patterns import FUNC_PATTERNS, SKIP_PREFIXES
+from spec_tagger.language_patterns import FRAMEWORKS
 
 
 class Crawler:
@@ -54,16 +54,26 @@ class Crawler:
                     for m in matches:
                         tag_type, name, revision = m.groups()
                         full_tag = m.group(0)
+                        closing_line = None
+                        if tag_type == "step":
+                            closing_line = line_num
                         file_tags.append(
                             {
                                 "filename": file,
                                 "line": line_num,
+                                "closing_line": closing_line,
                                 "type": tag_type,
                                 "name": name,
                                 "revision": revision,
                                 "full_tag": full_tag,
+                                "content": None,
                             }
                         )
+                        if self.tag_data and tag_type != "step":
+                            most_recent_tag_line = self.tag_data[-1]["line"]
+                            for i in range(len(self.tag_data) - 1, 0):
+                                if self.tag_data[i]["line"] == most_recent_tag_line:
+                                    self.tag_data[i]["closing_line"] = line_num - 1
 
                 if file_tags:
                     self.tag_data.extend(file_tags)
@@ -75,7 +85,7 @@ class Crawler:
 
 
 class TestCrawler(Crawler):
-    def __init__(self, verbose, test_dir, enabled_extensions=None):
+    def __init__(self, verbose, test_dir, enabled_extensions=None, framework=None):
         super().__init__(verbose, test_dir)
         self.enabled_extensions = enabled_extensions or {
             ".py",
@@ -100,6 +110,7 @@ class TestCrawler(Crawler):
             ".ex",
             ".exs",
         }
+        self.framework = framework
 
     def run(self) -> list | None:
         self.crawl_files()

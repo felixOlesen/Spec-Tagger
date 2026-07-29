@@ -4,6 +4,7 @@ from spec_tagger.spec_test_linker import Linker
 from spec_tagger.test_runner import Runner
 from spec_tagger.report_generation import Generator
 from spec_tagger.spec_test_crawler import SpecCrawler, TestCrawler
+from spec_tagger.language_patterns import detect_framework, framework_support_check
 
 
 def validate_args(args):
@@ -48,6 +49,11 @@ def main():
         default="{file}::{name}",
         help="How a single test is addressed on the CLI. Placeholders: {file} = test file path, {name} = test function name.",
     )
+    parser.add_argument(
+        "--test_framework",
+        help="Providing a test framework string will override the detection function for a minor speed up, if no framework is found, the tool will resort to file-based testing",
+    )
+
     parser.add_argument(
         "--one_by_one",
         action="store_true",
@@ -94,6 +100,21 @@ def main():
         else None,
     )
     spec_tag_data = spec_crawler.run()
+    fw_existence = True
+    if args.test_framework:
+        fw_existence = framework_support_check(args.test_framework)
+    else:
+        framework, matches = detect_framework(args.test_command)
+        if not framework:
+            print(
+                "Warning, no framework was detectable from your test command, please specify one with the '--test_framework' argument."
+            )
+            print("Continuing at file-level test granularity")
+            fw_existence = False
+        else:
+            print(f"Framework found: {framework}")
+            if len(matches) > 1:
+                print(f"Other matches found as well:\n{matches}")
 
     test_crawler = TestCrawler(
         verbose=args.verbose,
@@ -101,6 +122,7 @@ def main():
         enabled_extensions=set(args.test_extensions.split(","))
         if args.test_extensions
         else None,
+        framework=fw_existence,
     )
     test_tag_data = test_crawler.run()
 
