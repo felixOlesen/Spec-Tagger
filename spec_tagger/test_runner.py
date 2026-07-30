@@ -24,7 +24,9 @@ class Runner:
     def format_target(self, tag: dict):
         if "test_function" not in tag:
             return tag["filename"]
-        return self.test_format.format(file=tag["filename"], name=tag["test_function"])
+        return self.test_format.format(
+            file=tag["filename"], name=tag["test_function"], line=tag["item_start_line"]
+        )
 
     def build_targets_for_link(self, link: dict) -> list:
         # Dedupe and prune within this one spec tag's tests.
@@ -97,7 +99,6 @@ class Runner:
                 print(f"{tag_str}:")
                 for target in targets:
                     print(f"  : {target}")
-                if self.one_by_one:
                     for command in command_list:
                         print("  Command:", " ".join(shlex.quote(p) for p in command))
                 continue

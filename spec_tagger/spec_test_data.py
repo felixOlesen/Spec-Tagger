@@ -20,7 +20,7 @@ class TagData:
         item_start_line,
     ):
         tag_validity = True
-        reason = ""
+        reason = []
         if filename not in self.files:
             self.files.add(filename)
 
@@ -36,7 +36,7 @@ class TagData:
 
         if len(self.tag_revisions[tag_partial]) > 1:
             tag_validity = False
-            reason = "Multiple revision numbers found for this tag."
+            reason = ["Multiple revision numbers found for this tag."]
 
         if tag_type == "feat" or tag_type == "story":
             closing_line = line + 10
@@ -54,7 +54,7 @@ class TagData:
             "item_start_line": item_start_line,
             "validity": {
                 "valid": tag_validity,
-                "reasons": [reason],
+                "reasons": reason,
             },
         }
 

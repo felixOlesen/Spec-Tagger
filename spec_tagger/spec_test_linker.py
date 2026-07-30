@@ -140,4 +140,4 @@ class Linker:
 
     def register_invalid_tag(self, tag, reason):
         tag["validity"]["valid"] = False
-        tag["validity"]["reaons"].append(reason)
+        tag["validity"]["reasons"].append(reason)

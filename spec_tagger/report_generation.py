@@ -139,14 +139,16 @@ class Generator:
                 print("Results:")
                 for result in data["results"]:
                     color = GREEN if result["outcome"] == "passed" else RED
-                    print(f"  {color}{result['outcome'].upper()}{RESET}: {result['cmd']}")
+                    print(
+                        f"  {color}{result['outcome'].upper()}{RESET}: {result['cmd']}"
+                    )
                     if result["error"]:
                         print(f"    Error: {result['error']}")
 
         print("\n---------- Invalid Tags ----------")
         for tag in self.output_object["invalid_tags"]:
-            print(f"\nTag: {tag['tag']}")
-            print(f"Reason: {tag['reason']}")
+            print(f"\nTag: {tag['full_tag']}")
+            print(f"Reason: {tag['validity']['reasons']}")
 
         print("\n")
 
