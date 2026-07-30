@@ -100,21 +100,23 @@ def main():
         else None,
     )
     spec_tag_data = spec_crawler.run()
-    fw_existence = True
+    framework = None
+    matches = None
+    fw_override_failed = False
     if args.test_framework:
-        fw_existence = framework_support_check(args.test_framework)
-    else:
+        framework_exists = framework_support_check(args.test_framework)
+        if not framework_exists:
+            framework, matches = detect_framework(args.test_framework)
+
+    if not args.test_framework or fw_override_failed:
         framework, matches = detect_framework(args.test_command)
-        if not framework:
-            print(
-                "Warning, no framework was detectable from your test command, please specify one with the '--test_framework' argument."
-            )
-            print("Continuing at file-level test granularity")
-            fw_existence = False
-        else:
-            print(f"Framework found: {framework}")
-            if len(matches) > 1:
-                print(f"Other matches found as well:\n{matches}")
+
+    if framework:
+        print(f"Framework detected: {framework}, with other matches: {matches}")
+    else:
+        print(
+            "Failed to detect test framework, resorting to file-leve test granularity"
+        )
 
     test_crawler = TestCrawler(
         verbose=args.verbose,
@@ -122,7 +124,7 @@ def main():
         enabled_extensions=set(args.test_extensions.split(","))
         if args.test_extensions
         else None,
-        framework=fw_existence,
+        framework=framework,
     )
     test_tag_data = test_crawler.run()
 

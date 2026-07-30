@@ -4,16 +4,28 @@ class TagData:
         self.features = []
         self.stories = []
         self.steps = []
-
+        self.file_to_tag = {}
         self.tag_revisions = {}
 
     def add_tag(
-        self, filename, line, closing_line, tag_type, name, revision, full_tag, content
+        self,
+        filename,
+        line,
+        closing_line,
+        tag_type,
+        name,
+        revision,
+        full_tag,
+        content,
+        item_start_line,
     ):
         tag_validity = True
         reason = ""
         if filename not in self.files:
             self.files.add(filename)
+
+        if filename not in self.file_to_tag:
+            self.file_to_tag[filename] = []
 
         tag_partial = tag_type + "~" + name
 
@@ -22,9 +34,12 @@ class TagData:
 
         self.tag_revisions[tag_partial].add(revision)
 
-        if len(self.tag_revisions[tag_partial] > 1):
+        if len(self.tag_revisions[tag_partial]) > 1:
             tag_validity = False
             reason = "Multiple revision numbers found for this tag."
+
+        if tag_type == "feat" or tag_type == "story":
+            closing_line = line + 10
 
         tag = {
             "filename": filename,
@@ -36,12 +51,14 @@ class TagData:
             "full_tag": full_tag,
             "tag_partial": tag_partial,
             "content": content,
+            "item_start_line": item_start_line,
             "validity": {
                 "valid": tag_validity,
                 "reason": reason,
             },
         }
 
+        self.file_to_tag[filename].append(tag)
         match tag_type:
             case "feat":
                 self.features.append(tag)
@@ -81,6 +98,33 @@ class TagData:
 class SpecTagData(TagData):
     def __init__(self) -> None:
         super().__init__()
+
+    def update_spec_item_closing_lines(self):
+        if len(self.features) > 1:
+            for i in range(len(self.features) - 1):
+                feature = self.features[i]
+                next_feature = self.features[i + 1]
+                if feature["filename"] == next_feature["filename"]:
+                    feature["closing_line"] = next_feature["line"]
+                else:
+                    feature["closing_line"] = -1
+                if i == len(self.features) - 2:
+                    next_feature["closing_line"] = -1
+        elif len(self.features) == 1:
+            self.features[0]["closing_line"] = -1
+
+        if len(self.stories) > 1:
+            for i in range(len(self.stories) - 1):
+                story = self.stories[i]
+                next_story = self.stories[i + 1]
+                if story["filename"] == next_story["filename"]:
+                    story["closing_line"] = next_story["line"]
+                else:
+                    story["closing_line"] = -1
+                if i == len(self.stories) - 2:
+                    next_story["closing_line"] = -1
+        elif len(self.stories) == 1:
+            self.stories[0]["closing_line"] = -1
 
 
 class TestTagData(TagData):
