@@ -54,7 +54,7 @@ class TagData:
             "item_start_line": item_start_line,
             "validity": {
                 "valid": tag_validity,
-                "reason": reason,
+                "reasons": [reason],
             },
         }
 
@@ -94,6 +94,14 @@ class TagData:
         else:
             print("Warning, cannot update closing line, tag not found.")
 
+    def get_all_tags(self) -> list[dict]:
+        full_list = []
+        full_list.extend(self.features)
+        full_list.extend(self.stories)
+        full_list.extend(self.steps)
+
+        return full_list
+
 
 class SpecTagData(TagData):
     def __init__(self) -> None:
@@ -125,6 +133,22 @@ class SpecTagData(TagData):
                     next_story["closing_line"] = -1
         elif len(self.stories) == 1:
             self.stories[0]["closing_line"] = -1
+
+    def identify_duplicates(self):
+        all_tags = self.get_all_tags()
+        freq_map = {}
+        for tag in all_tags:
+            if tag["full_tag"] not in freq_map:
+                freq_map[tag["full_tag"]] = []
+            freq_map[tag["full_tag"]].append(tag)
+
+        for _, tag_info in freq_map.items():
+            if len(tag_info) > 1:
+                for tag in tag_info:
+                    tag["validity"]["valid"] = False
+                    tag["validity"]["reasons"].append(
+                        "Duplicate tags found in the specification."
+                    )
 
 
 class TestTagData(TagData):
