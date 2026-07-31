@@ -75,7 +75,7 @@ class Linker:
             if test_tag["validity"]["valid"]:
                 if test_tag["tag_partial"] not in self.linked_tags:
                     self.register_invalid_tag(
-                        test_tag, "Test tag has no corresponding spec tag."
+                        test_tag, "Test tag has no corresponding valid spec tag."
                     )
                 elif test_tag["test_function"] is None:
                     self.register_invalid_tag(
@@ -96,7 +96,7 @@ class Linker:
             test_tags = value["test_tags"]
             if not test_tags:
                 self.register_invalid_tag(
-                    spec_tag, "Spec tag has no corresponding test tag."
+                    spec_tag, "Spec tag has no corresponding valid test tag."
                 )
                 self.linked_tags[key]["test_tags"] = None
 

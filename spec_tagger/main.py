@@ -157,6 +157,7 @@ def main():
             test_output=test_results,
             invalid_tags=invalid_tags,
             successful_links=links,
+            one_by_one=args.one_by_one,
             verbose=args.verbose,
         )
         generator.generate_report()
