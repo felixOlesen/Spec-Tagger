@@ -1,4 +1,4 @@
-# feat~no_func~1
+# feat~no_func~2
 
 Spec item example
 

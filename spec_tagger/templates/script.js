@@ -7,12 +7,14 @@ document.addEventListener("DOMContentLoaded", () => {
       "<p class='meta-info'>Error: No report data found.</p>";
     return;
   }
-
-  renderTestResults(data.test_results || {});
+  if (data.one_by_one) {
+    document.getElementById("one-by-one-header").innerHTML = "<em>One-by-one Mode</em>";
+  }
+  renderTestResults(data.test_results || {}, data.one_by_one || false);
   renderInvalidTags(data.invalid_tags || []);
 });
 
-function renderTestResults(results) {
+function renderTestResults(results, one_by_one) {
   const container = document.getElementById("results-container");
   const specItems = Object.entries(results);
 
@@ -27,27 +29,32 @@ function renderTestResults(results) {
     const specTag = details.spec_tag || {};
     const testTags = details.test_tags || [];
     const passCount = details.pass_count ?? 0;
-    const testCount = details.test_count ?? 0;
+    var testCount = details.test_count ?? 0;
     const runs = details.results || [];
     const rowId = `spec-${specIndex}-detail`;
     const canExpand = runs.length > 0;
 
     const linkedTestsHtml = testTags.length > 0
       ? `<ul class="linked-tests">${testTags
-          .map(t => `<li>${escapeHtml(t.filename)}${t.test_function ? ` :: ${escapeHtml(t.test_function)}` : ""}</li>`)
-          .join("")}</ul>`
+        .map(t => `<li>${escapeHtml(t.filename)}${t.test_function ? ` :: ${escapeHtml(t.test_function)}` : ""}</li>`)
+        .join("")}</ul>`
       : `<span class="meta-info">None</span>`;
 
     let overallClass = "badge-untested";
     if (testCount > 0) {
-      overallClass = passCount === testCount ? "badge-pass" : "badge-fail";
+      if (one_by_one == true) {
+        overallClass = passCount === testCount ? "badge-pass" : "badge-fail";
+      } else {
+        testCount = 1
+        overallClass = passCount === testCount ? "badge-pass" : "badge-fail";
+      }
     }
 
     // One dot per test run, so a spec with many results stays a single row.
     const outcomesHtml = canExpand
       ? runs
-          .map(run => `<span class="outcome-dot outcome-${escapeHtml(run.outcome)}" title="${escapeHtml(run.cmd || run.outcome)}"></span>`)
-          .join("")
+        .map(run => `<span class="outcome-dot outcome-${escapeHtml(run.outcome)}" title="${escapeHtml(run.cmd || run.outcome)}"></span>`)
+        .join("")
       : `<span class="meta-info">No linked tests ran</span>`;
 
     rowsHtml += `
@@ -132,10 +139,10 @@ function renderInvalidTags(tags) {
     .map(
       tag_data => `
         <tr>
-          <td class="warning-text">${escapeHtml(tag_data["tag"])}</td>
-          <td>${escapeHtml(tag_data["file"])}</td>
+          <td class="warning-text">${escapeHtml(tag_data["full_tag"])}</td>
+          <td>${escapeHtml(tag_data["filename"])}</td>
           <td>${escapeHtml(String(tag_data["line"]))}</td>
-          <td>${escapeHtml(tag_data["reason"])}</td>
+          <td>${escapeHtml(tag_data["validity"]["reasons"])}</td>
         </tr>
       `
     )

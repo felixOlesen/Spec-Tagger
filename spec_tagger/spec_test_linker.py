@@ -1,5 +1,13 @@
+from spec_tagger.spec_test_data import SpecTagData, TagData, TestTagData
+
+
 class Linker:
-    def __init__(self, spec_data: list | None, test_data: list | None, verbose: bool):
+    def __init__(
+        self,
+        spec_data: SpecTagData,
+        test_data: TestTagData,
+        verbose: bool,
+    ):
         self.spec_data = spec_data
         self.test_data = test_data
         self.verbose = verbose
@@ -19,11 +27,13 @@ class Linker:
     def display_data(self):
         if self.spec_data:
             print("Spec Data:")
-            for tag in self.spec_data:
+            all_spec_tags = self.spec_data.get_all_tags()
+            for tag in all_spec_tags:
                 print(tag)
         if self.test_data:
             print("\nTest Data:")
-            for tag in self.test_data:
+            all_test_tags = self.test_data.get_all_tags()
+            for tag in all_test_tags:
                 print(tag)
 
         # Display linked tags
@@ -41,39 +51,44 @@ class Linker:
                 print(invalid)
 
     def link_data(self) -> tuple[dict, list] | None:
-        self.check_tag_frequency_and_revisions(self.spec_data)
+        self.spec_data.identify_duplicates()
+        self.check_revisions()
+        all_spec_tags = self.spec_data.get_all_tags()
+        all_test_tags = self.test_data.get_all_tags()
 
-        if not self.spec_data:
+        if not self.spec_data or not all_spec_tags:
             print("Warning spec data found to be null on run.")
             return
 
-        for spec_tag in self.spec_data:
-            self.linked_tags[spec_tag["type"] + "~" + spec_tag["name"]] = {
-                "spec_tag": spec_tag,
-                "test_tags": [],
-            }
+        for spec_tag in all_spec_tags:
+            if spec_tag["validity"]["valid"]:
+                self.linked_tags[spec_tag["tag_partial"]] = {
+                    "spec_tag": spec_tag,
+                    "test_tags": [],
+                }
 
-        if not self.test_data:
+        if not self.test_data or not all_test_tags:
             print("Warning test data found to be null on run.")
             return
 
-        for test_tag in self.test_data:
-            if test_tag["type"] + "~" + test_tag["name"] not in self.linked_tags:
-                self.register_invalid_tag(
-                    test_tag, "Test tag has no corresponding spec tag."
-                )
-            elif test_tag["test_function"] is None:
-                self.register_invalid_tag(
-                    test_tag, "No test function was found following the tag."
-                )
-            else:
-                self.linked_tags[test_tag["type"] + "~" + test_tag["name"]][
-                    "test_tags"
-                ].append(test_tag)
-                if self.verbose:
-                    print(
-                        f"Linked test tag {test_tag['full_tag']} to spec tag {self.linked_tags[test_tag['type'] + '~' + test_tag['name']]['spec_tag']['full_tag']}"
+        for test_tag in all_test_tags:
+            if test_tag["validity"]["valid"]:
+                if test_tag["tag_partial"] not in self.linked_tags:
+                    self.register_invalid_tag(
+                        test_tag, "Test tag has no corresponding valid spec tag."
                     )
+                elif test_tag["test_function"] is None:
+                    self.register_invalid_tag(
+                        test_tag, "No test function was found following the tag."
+                    )
+                else:
+                    self.linked_tags[test_tag["type"] + "~" + test_tag["name"]][
+                        "test_tags"
+                    ].append(test_tag)
+                    if self.verbose:
+                        print(
+                            f"Linked test tag {test_tag['full_tag']} to spec tag {self.linked_tags[test_tag['tag_partial']]['spec_tag']['full_tag']}"
+                        )
 
         # check revision numbers and add invalid tags for mismatches
         for key, value in self.linked_tags.items():
@@ -81,18 +96,9 @@ class Linker:
             test_tags = value["test_tags"]
             if not test_tags:
                 self.register_invalid_tag(
-                    spec_tag, "Spec tag has no corresponding test tag."
+                    spec_tag, "Spec tag has no corresponding valid test tag."
                 )
                 self.linked_tags[key]["test_tags"] = None
-            else:
-                for test_tag in test_tags:
-                    if spec_tag["revision"] != test_tag["revision"]:
-                        self.register_invalid_tag(
-                            test_tag,
-                            f"Revision number mismatch with spec tag, spec tag: {spec_tag['revision']} test tag: {test_tag['revision']}",
-                        )
-                        # if the revision number of the test tag does not match the spec tag, remove it from the list of test tags
-                        self.linked_tags[key]["test_tags"].remove(test_tag)
 
         # remove any entries from linked_tags where the test_tags list is empty
         self.linked_tags = {
@@ -100,51 +106,38 @@ class Linker:
             for k, v in self.linked_tags.items()
             if v["test_tags"] is not None and len(v["test_tags"]) > 0
         }
+        self.invalid_tag_sweep()
 
         return self.linked_tags, self.invalid_tags
 
-    def check_tag_frequency_and_revisions(self, tag_data):
-        tag_freq_map = {}
-        tag_revision_map = {}
-        for tag in tag_data:
-            tag_key = tag["type"] + "~" + tag["name"]
-            if tag["full_tag"] not in tag_freq_map:
-                tag_freq_map[tag["full_tag"]] = 0
+    def invalid_tag_sweep(self):
+        all_tags = self.spec_data.get_all_tags()
+        all_tags.extend(self.test_data.get_all_tags())
 
-            if tag_key not in tag_revision_map:
-                tag_revision_map[tag_key] = set()
+        for tag in all_tags:
+            if not tag["validity"]["valid"]:
+                self.invalid_tags.append(tag)
 
-            tag_freq_map[tag["full_tag"]] += 1
-            tag_revision_map[tag_key].add(tag["revision"])
+    def check_revisions(self):
+        revision_map = self.spec_data.tag_revisions
+        all_tags = self.spec_data.get_all_tags()
+        all_tags.extend(self.test_data.get_all_tags())
 
-            if tag_freq_map[tag["full_tag"]] > 1:
-                self.register_invalid_tag(tag, "Duplicate tag found.")
+        test_revisions = self.test_data.tag_revisions
+        for tag_partial, revisions in test_revisions.items():
+            if tag_partial in revision_map:
+                revision_map[tag_partial].update(revisions)
 
-            if len(tag_revision_map[tag_key]) > 1:
-                # print the smallest revision number for the tag
-                smallest_revision = min(tag_revision_map[tag_key], key=int)
-                highest_revision = max(tag_revision_map[tag_key], key=int)
-                # search for correct tag in tag_data to
-                invalid_tag = tag_key + "~" + smallest_revision
-                for tag in tag_data:
-                    if tag["full_tag"] == invalid_tag:
-                        self.register_invalid_tag(
-                            tag,
-                            "Multiple revisions found for the same tag: "
-                            + ", ".join(tag_revision_map[tag_key])
-                            + ". Using revision: "
-                            + highest_revision,
-                        )
-                        break
-                # set the highest revision number as the valid one
-                tag_revision_map[tag_key] = {highest_revision}
+        for tag in all_tags:
+            revisions = revision_map[tag["tag_partial"]]
+            if len(revisions) > 1:
+                highest_revision = max(revisions)
+                if tag["revision"] != highest_revision:
+                    self.register_invalid_tag(
+                        tag,
+                        "Revision number is outdated compared to other tags with the same identifier.",
+                    )
 
     def register_invalid_tag(self, tag, reason):
-        self.invalid_tags.append(
-            {
-                "tag": tag["full_tag"],
-                "file": tag["filename"],
-                "line": tag["line"],
-                "reason": reason,
-            }
-        )
+        tag["validity"]["valid"] = False
+        tag["validity"]["reasons"].append(reason)

@@ -48,11 +48,11 @@ def test_example():
     assert True
 
 
-# feat~no_func~1
+# feat~no_func~2
 def test_example_2():
     assert False
 
 
 # feat~dead_func~1
-def dead_func_1():
+def test_dead_func_1():
     raise Exception

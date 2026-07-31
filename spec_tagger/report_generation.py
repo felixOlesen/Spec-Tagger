@@ -15,6 +15,7 @@ class Generator:
         test_output: dict | None,
         invalid_tags: list | None,
         successful_links: dict | None,
+        one_by_one: bool,
         verbose: bool,
     ):
         self.report_output_dir = report_output_dir
@@ -22,6 +23,7 @@ class Generator:
         self.test_output = test_output
         self.invalid_tags = invalid_tags
         self.successful_links = successful_links
+        self.one_by_one = one_by_one
         self.verbose = verbose
         self.output_object = {}
         self.report_name = "report.json"
@@ -67,7 +69,7 @@ class Generator:
         if not self.test_output:
             print("Warning test_output found to be null on test generation")
             return
-
+        self.output_object["one_by_one"] = self.one_by_one
         self.output_object["test_results"] = self.test_output
         self.output_object["invalid_tags"] = self.invalid_tags
 
@@ -139,14 +141,16 @@ class Generator:
                 print("Results:")
                 for result in data["results"]:
                     color = GREEN if result["outcome"] == "passed" else RED
-                    print(f"  {color}{result['outcome'].upper()}{RESET}: {result['cmd']}")
+                    print(
+                        f"  {color}{result['outcome'].upper()}{RESET}: {result['cmd']}"
+                    )
                     if result["error"]:
                         print(f"    Error: {result['error']}")
 
         print("\n---------- Invalid Tags ----------")
         for tag in self.output_object["invalid_tags"]:
-            print(f"\nTag: {tag['tag']}")
-            print(f"Reason: {tag['reason']}")
+            print(f"\nTag: {tag['full_tag']}")
+            print(f"Reason: {tag['validity']['reasons']}")
 
         print("\n")
 

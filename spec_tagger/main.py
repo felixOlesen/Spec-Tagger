@@ -4,6 +4,7 @@ from spec_tagger.spec_test_linker import Linker
 from spec_tagger.test_runner import Runner
 from spec_tagger.report_generation import Generator
 from spec_tagger.spec_test_crawler import SpecCrawler, TestCrawler
+from spec_tagger.language_patterns import detect_framework, framework_support_check
 
 
 def validate_args(args):
@@ -48,6 +49,11 @@ def main():
         default="{file}::{name}",
         help="How a single test is addressed on the CLI. Placeholders: {file} = test file path, {name} = test function name.",
     )
+    parser.add_argument(
+        "--test_framework",
+        help="Providing a test framework string will override the detection function for a minor speed up, if no framework is found, the tool will resort to file-based testing",
+    )
+
     parser.add_argument(
         "--one_by_one",
         action="store_true",
@@ -94,6 +100,23 @@ def main():
         else None,
     )
     spec_tag_data = spec_crawler.run()
+    framework = None
+    matches = None
+    fw_override_failed = False
+    if args.test_framework:
+        framework_exists = framework_support_check(args.test_framework)
+        if not framework_exists:
+            framework, matches = detect_framework(args.test_framework)
+
+    if not args.test_framework or fw_override_failed:
+        framework, matches = detect_framework(args.test_command)
+
+    if framework:
+        print(f"Framework detected: {framework}, with other matches: {matches}")
+    else:
+        print(
+            "Failed to detect test framework, resorting to file-leve test granularity"
+        )
 
     test_crawler = TestCrawler(
         verbose=args.verbose,
@@ -101,6 +124,7 @@ def main():
         enabled_extensions=set(args.test_extensions.split(","))
         if args.test_extensions
         else None,
+        framework=framework,
     )
     test_tag_data = test_crawler.run()
 
@@ -133,6 +157,7 @@ def main():
             test_output=test_results,
             invalid_tags=invalid_tags,
             successful_links=links,
+            one_by_one=args.one_by_one,
             verbose=args.verbose,
         )
         generator.generate_report()
