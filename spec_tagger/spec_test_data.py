@@ -134,7 +134,7 @@ class SpecTagData(TagData):
         elif len(self.stories) == 1:
             self.stories[0]["closing_line"] = -1
 
-    def identify_duplicates(self):
+    def identify_duplicates(self, target_tag=None):
         all_tags = self.get_all_tags()
         freq_map = {}
         for tag in all_tags:
@@ -145,10 +145,17 @@ class SpecTagData(TagData):
         for _, tag_info in freq_map.items():
             if len(tag_info) > 1:
                 for tag in tag_info:
-                    tag["validity"]["valid"] = False
-                    tag["validity"]["reasons"].append(
-                        "Duplicate tags found in the specification."
-                    )
+                    if target_tag:
+                        if tag["tag_partial"] == target_tag:
+                            tag["validity"]["valid"] = False
+                            tag["validity"]["reasons"].append(
+                                "Duplicate tags found in the specification."
+                            )
+                    else:
+                        tag["validity"]["valid"] = False
+                        tag["validity"]["reasons"].append(
+                            "Duplicate tags found in the specification."
+                        )
 
 
 class TestTagData(TagData):

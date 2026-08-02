@@ -3,11 +3,13 @@ import os
 from spec_tagger.spec_test_linker import Linker
 from spec_tagger.test_runner import Runner
 from spec_tagger.report_generation import Generator
-from spec_tagger.spec_test_crawler import SpecCrawler, TestCrawler
+from spec_tagger.spec_test_crawler import TAG_PATTERN, SpecCrawler, TestCrawler
 from spec_tagger.language_patterns import detect_framework, framework_support_check
+import re
 
 
 def validate_args(args):
+
     if not args.test_command:
         raise ValueError("test_command is required")
     if args.report and not args.report_output:
@@ -18,8 +20,17 @@ def validate_args(args):
         raise ValueError(
             f"report_output '{args.report_output}' is not a valid directory"
         )
+    tag_regex = re.compile(TAG_PATTERN)
+    if args.target_tag:
+        m = tag_regex.search(args.target_tag)
+        if not m:
+            raise ValueError(
+                f"target_tag provided: {args.target_tag}, doesn't match the format feat/story/step~name~revision_number"
+            )
+
     if args.target_spec and not os.path.exists(args.target_spec):
         raise ValueError(f"target_spec '{args.target_spec}' does not exist")
+
     if args.test_dir and not os.path.exists(args.test_dir):
         raise ValueError(f"test_dir '{args.test_dir}' does not exist")
 
@@ -87,7 +98,16 @@ def main():
     parser.add_argument(
         "--verbose", action="store_true", help="Enables verbose printing"
     )
-
+    parser.add_argument(
+        "--tag_check",
+        action="store_true",
+        help="Focuses entirely on identifying invalid tags, preventing the tool from continuing on to running tests.",
+    )
+    parser.add_argument(
+        "--target_tag",
+        default=None,
+        help="Specify a target tag for the crawler to look for and run tests against, works with specified files in taret_spec as well.",
+    )
     args = parser.parse_args()
 
     validate_args(args)
@@ -129,7 +149,10 @@ def main():
     test_tag_data = test_crawler.run()
 
     linker = Linker(
-        spec_data=spec_tag_data, test_data=test_tag_data, verbose=args.verbose
+        spec_data=spec_tag_data,
+        test_data=test_tag_data,
+        target_tag=args.target_tag,
+        verbose=args.verbose,
     )
     linked_data = linker.link_data()
     links = None
@@ -139,6 +162,10 @@ def main():
 
     if args.verbose:
         linker.display_data()
+
+    if args.tag_check:
+        linker.display_invalid_tags()
+        return
 
     runner = Runner(
         test_run_command=args.test_command,

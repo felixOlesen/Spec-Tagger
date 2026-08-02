@@ -3,6 +3,10 @@ import re
 from spec_tagger.language_patterns import FRAMEWORKS
 from spec_tagger.spec_test_data import TagData, SpecTagData, TestTagData
 
+TAG_PATTERN = (
+    r"(?<![A-Za-z0-9_~])(feat|story|step)~([A-Za-z0-9_]+)~([0-9]+)(?![A-Za-z0-9_~])"
+)
+
 
 class Crawler:
     def __init__(self, verbose, directory_or_files):
@@ -15,9 +19,7 @@ class Crawler:
         # Tag Regex should match to the format:
         # [feat or story or step]~[FEATURE NAME]~[REVISION NUMBER]
         # Example Tag: feat~MyFeature~1
-        self.tag_regex = re.compile(
-            r"(?<![A-Za-z0-9_~])(feat|story|step)~([A-Za-z0-9_]+)~([0-9]+)(?![A-Za-z0-9_~])"
-        )
+        self.tag_regex = re.compile(TAG_PATTERN)
 
     def run(self):
         self.crawl_files()
@@ -60,7 +62,6 @@ class Crawler:
                         closing_line = None
                         if tag_type == "step":
                             closing_line = line_num
-
                         self.tag_data.add_tag(
                             filename=file,
                             line=line_num,
@@ -79,7 +80,13 @@ class Crawler:
 
 
 class TestCrawler(Crawler):
-    def __init__(self, verbose, test_dir, enabled_extensions=None, framework=None):
+    def __init__(
+        self,
+        verbose,
+        test_dir,
+        enabled_extensions=None,
+        framework=None,
+    ):
         super().__init__(verbose, test_dir)
         self.enabled_extensions = enabled_extensions or {
             ".py",

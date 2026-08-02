@@ -6,6 +6,7 @@ class Linker:
         self,
         spec_data: SpecTagData,
         test_data: TestTagData,
+        target_tag: str | None,
         verbose: bool,
     ):
         self.spec_data = spec_data
@@ -13,6 +14,14 @@ class Linker:
         self.verbose = verbose
         self.invalid_tags = []
         self.linked_tags = {}
+
+        if target_tag:
+            target_tag = target_tag.strip()
+            tag_group = target_tag.split("~")
+            tag_partial = tag_group[0] + "~" + tag_group[1]
+            target_tag = tag_partial
+
+        self.target_tag = target_tag
 
     # Cases to consider:
     # 1. Spec has a tag, but no corresponding test exists.
@@ -50,7 +59,18 @@ class Linker:
             for invalid in self.invalid_tags:
                 print(invalid)
 
+    def display_invalid_tags(self):
+        if self.invalid_tags:
+            print("\nInvalid Tags:")
+            for invalid in self.invalid_tags:
+                print(f"Tag: {invalid['full_tag']}")
+                print("Reasons:")
+                for reason in invalid["validity"]["reasons"]:
+                    print(f"  {reason}\n")
+
     def link_data(self) -> tuple[dict, list] | None:
+        if self.target_tag:
+            self.filter_out_non_target_tags()
         self.spec_data.identify_duplicates()
         self.check_revisions()
         all_spec_tags = self.spec_data.get_all_tags()
@@ -61,7 +81,7 @@ class Linker:
             return
 
         for spec_tag in all_spec_tags:
-            if spec_tag["validity"]["valid"]:
+            if spec_tag["validity"]["valid"] and "ignore" not in spec_tag:
                 self.linked_tags[spec_tag["tag_partial"]] = {
                     "spec_tag": spec_tag,
                     "test_tags": [],
@@ -72,7 +92,7 @@ class Linker:
             return
 
         for test_tag in all_test_tags:
-            if test_tag["validity"]["valid"]:
+            if test_tag["validity"]["valid"] and "ignore" not in test_tag:
                 if test_tag["tag_partial"] not in self.linked_tags:
                     self.register_invalid_tag(
                         test_tag, "Test tag has no corresponding valid spec tag."
@@ -115,7 +135,7 @@ class Linker:
         all_tags.extend(self.test_data.get_all_tags())
 
         for tag in all_tags:
-            if not tag["validity"]["valid"]:
+            if not tag["validity"]["valid"] and "ignore" not in tag:
                 self.invalid_tags.append(tag)
 
     def check_revisions(self):
@@ -130,7 +150,7 @@ class Linker:
 
         for tag in all_tags:
             revisions = revision_map[tag["tag_partial"]]
-            if len(revisions) > 1:
+            if len(revisions) > 1 and "ignore" not in tag:
                 highest_revision = max(revisions)
                 if tag["revision"] != highest_revision:
                     self.register_invalid_tag(
@@ -141,3 +161,11 @@ class Linker:
     def register_invalid_tag(self, tag, reason):
         tag["validity"]["valid"] = False
         tag["validity"]["reasons"].append(reason)
+
+    def filter_out_non_target_tags(self):
+        all_tags = self.spec_data.get_all_tags()
+        all_test_tags = self.test_data.get_all_tags()
+        all_tags.extend(all_test_tags)
+        for tag in all_tags:
+            if tag["tag_partial"] != self.target_tag:
+                tag["ignore"] = True
