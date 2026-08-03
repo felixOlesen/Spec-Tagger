@@ -27,9 +27,12 @@ def validate_args(args):
             raise ValueError(
                 f"target_tag provided: {args.target_tag}, doesn't match the format feat/story/step~name~revision_number"
             )
-
-    if args.target_spec and not os.path.exists(args.target_spec):
-        raise ValueError(f"target_spec '{args.target_spec}' does not exist")
+    if not args.target_spec:
+        raise ValueError("target_spec value found to be null on validation.")
+    target_spec = args.target_spec.split(",")
+    for target in target_spec:
+        if target and not os.path.exists(target):
+            raise ValueError(f"target_spec '{target}' does not exist")
 
     if args.test_dir and not os.path.exists(args.test_dir):
         raise ValueError(f"test_dir '{args.test_dir}' does not exist")
@@ -112,9 +115,19 @@ def main():
 
     validate_args(args)
     print(f"Arguments: {args}")
+
+    target_spec_list = args.target_spec.split(",")
+    target_spec = args.target_spec
+    if len(target_spec_list) == 1:
+        target_spec = target_spec_list[0]
+    else:
+        for target in target_spec_list:
+            target.strip()
+        target_spec = target_spec_list
+
     spec_crawler = SpecCrawler(
         verbose=args.verbose,
-        spec_dir=args.target_spec,
+        spec_dir=target_spec,
         enabled_extensions=set(args.spec_file_extensions.split(","))
         if args.spec_file_extensions
         else None,
@@ -147,12 +160,19 @@ def main():
         framework=framework,
     )
     test_tag_data = test_crawler.run()
+    spec_subset_presence = False
+    if type(target_spec) is list:
+        spec_subset_presence = True
+    if type(target_spec) is str:
+        if not os.path.isdir(target_spec) and os.path.isfile(target_spec):
+            spec_subset_presence = True
 
     linker = Linker(
         spec_data=spec_tag_data,
         test_data=test_tag_data,
         target_tag=args.target_tag,
         verbose=args.verbose,
+        spec_subset=spec_subset_presence,
     )
     linked_data = linker.link_data()
     links = None

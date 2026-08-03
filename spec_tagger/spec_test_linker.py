@@ -8,6 +8,7 @@ class Linker:
         test_data: TestTagData,
         target_tag: str | None,
         verbose: bool,
+        spec_subset=False,
     ):
         self.spec_data = spec_data
         self.test_data = test_data
@@ -22,6 +23,7 @@ class Linker:
             target_tag = tag_partial
 
         self.target_tag = target_tag
+        self.spec_subset = spec_subset
 
     # Cases to consider:
     # 1. Spec has a tag, but no corresponding test exists.
@@ -149,6 +151,8 @@ class Linker:
                 revision_map[tag_partial].update(revisions)
 
         for tag in all_tags:
+            if self.spec_subset and tag["tag_partial"] not in revision_map:
+                continue
             revisions = revision_map[tag["tag_partial"]]
             if len(revisions) > 1 and "ignore" not in tag:
                 highest_revision = max(revisions)
