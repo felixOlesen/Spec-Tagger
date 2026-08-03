@@ -1,4 +1,4 @@
-from spec_tagger.spec_test_data import SpecTagData, TagData, TestTagData
+from spec_tagger.tag_test.spec_test_data import SpecTagData, TagData, TestTagData
 
 
 class Linker:

@@ -1,7 +1,7 @@
 import os
 import re
-from spec_tagger.language_patterns import FRAMEWORKS
-from spec_tagger.spec_test_data import TagData, SpecTagData, TestTagData
+from spec_tagger.tag_test.language_patterns import FRAMEWORKS
+from spec_tagger.tag_test.spec_test_data import TagData, SpecTagData, TestTagData
 
 TAG_PATTERN = (
     r"(?<![A-Za-z0-9_~])(feat|story|step)~([A-Za-z0-9_]+)~([0-9]+)(?![A-Za-z0-9_~])"

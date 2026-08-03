@@ -1,10 +1,13 @@
 import argparse
 import os
-from spec_tagger.spec_test_linker import Linker
-from spec_tagger.test_runner import Runner
-from spec_tagger.report_generation import Generator
-from spec_tagger.spec_test_crawler import TAG_PATTERN, SpecCrawler, TestCrawler
-from spec_tagger.language_patterns import detect_framework, framework_support_check
+from spec_tagger.tag_test.spec_test_linker import Linker
+from spec_tagger.tag_test.test_runner import Runner
+from spec_tagger.tag_test.report_generation import Generator
+from spec_tagger.tag_test.spec_test_crawler import TAG_PATTERN, SpecCrawler, TestCrawler
+from spec_tagger.tag_test.language_patterns import (
+    detect_framework,
+    framework_support_check,
+)
 import re
 
 

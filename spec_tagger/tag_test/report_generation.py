@@ -156,7 +156,9 @@ class Generator:
 
     def _copy_template_file(self, file_name):
         template_content = (
-            pkg_resources.files("spec_tagger.templates").joinpath(file_name).read_text()
+            pkg_resources.files("spec_tagger.tag_test.templates")
+            .joinpath(file_name)
+            .read_text()
         )
 
         destination = os.path.join(self.report_output_dir, file_name)

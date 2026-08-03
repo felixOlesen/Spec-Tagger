@@ -1,4 +1,4 @@
-from spec_tagger.spec_test_crawler import SpecCrawler, TestCrawler
+from spec_tagger.tag_test.spec_test_crawler import SpecCrawler, TestCrawler
 
 
 # feat~spec_crawling~1
