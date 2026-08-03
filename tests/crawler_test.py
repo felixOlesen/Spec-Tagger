@@ -53,6 +53,5 @@ def test_example_2():
     assert False
 
 
-# feat~dead_func~1
 def test_dead_func_1():
     raise Exception

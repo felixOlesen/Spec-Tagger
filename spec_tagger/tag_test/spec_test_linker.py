@@ -123,11 +123,11 @@ class Linker:
                 self.linked_tags[key]["test_tags"] = None
 
         # remove any entries from linked_tags where the test_tags list is empty
-        self.linked_tags = {
-            k: v
-            for k, v in self.linked_tags.items()
-            if v["test_tags"] is not None and len(v["test_tags"]) > 0
-        }
+        # self.linked_tags = {
+        #    k: v
+        #    for k, v in self.linked_tags.items()
+        #    if v["test_tags"] is not None and len(v["test_tags"]) > 0
+        # }
         self.invalid_tag_sweep()
 
         return self.linked_tags, self.invalid_tags

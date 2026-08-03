@@ -71,7 +71,10 @@ class Runner:
             return
 
         for _, link in self.linked_tags.items():
-            targets = self.build_targets_for_link(link)
+            if link["test_tags"]:
+                targets = self.build_targets_for_link(link)
+            else:
+                targets = None
             tag_str = link["spec_tag"]["full_tag"]
             if not targets:
                 spec = link["spec_tag"]
