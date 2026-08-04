@@ -1,0 +1,19 @@
+name: Post-Push Spec Tags
+on:
+  push:
+    branches-ignore: [main]
+    paths: ['features/**', 'tests/**', 'spec_tagger/**']
+
+jobs:
+  tag-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install "git+https://github.com/felixOlesen/Spec-Tagger@v0.0.1"
+      - run: pip install -r requirements.txt
+      - name: Test Against Tags
+        run: spectagger --target_spec features --test_dir tests --test_command "pytest {tests}"
+

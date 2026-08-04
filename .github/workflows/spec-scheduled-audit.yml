@@ -1,0 +1,57 @@
+name: Scheduled Spec Audit
+on:
+  schedule:
+    - cron: '0 8 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: |
+          pip install "git+https://github.com/felixOlesen/Spec-Tagger@v0.0.1"
+          pip install -r requirements.txt
+
+      - name: Full Spec Audit
+        id: audit
+        run: |
+          mkdir -p report
+          spectagger --target_spec features --test_dir tests \
+                     --test_command "pytest {tests}" \
+                     --one_by_one --verbose \
+                     --report --report_type html --report_output report
+        continue-on-error: true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spec-audit-report
+          path: report/
+
+      - name: Open an issue on failure
+        if: steps.audit.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              ...context.repo,
+              title: `Error in Spec audit detected — ${new Date().toISOString().slice(0,10)}`,
+              body: `The scheduled spec audit found an error. See the run:\n${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              labels: ['spec-error'],
+            });
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: report/
+      - id: deploy
+        uses: actions/deploy-pages@v4

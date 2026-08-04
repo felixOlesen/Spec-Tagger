@@ -1,0 +1,33 @@
+name: Full Sweep of Spec and Tests
+on:
+  pull_request:
+  types: [opened, synchronize, reopened]
+  paths: ['features/**', 'tests/**', 'spec_tagger/**']
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: |
+          pip install "git+https://github.com/felixOlesen/Spec-Tagger@v0.0.1"
+          pip install -r requirements.txt
+      
+      - name: Run SpecTagger
+        id: spec_tagger_testing
+        run: spectagger --target_spec features --test_dir tests \
+                        --test_command "pytest {tests}" \
+                        --report --report_type stdout
+        continue-on-error: true
+
+      - name: Gate
+        if: steps.spec_tagger_testing.outcome == 'failure'
+        run: exit 1
