@@ -112,6 +112,7 @@ def main():
             return
         case "ci":
             print("CI command invoked")
+
             return
         case _:
             print("No command, running core tool...")
