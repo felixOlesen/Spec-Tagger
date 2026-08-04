@@ -1,0 +1,11 @@
+repos:
+  - repo: local
+    hooks:
+      - id: spectagger-tag-check
+        name: Validate spec tags
+        entry: spectagger --tag_check
+        language: system          # use the already-installed spectagger
+        files: ^(features/|tests/)
+        pass_filenames: false
+        args: [--target_spec, features, --test_dir, tests,
+               --test_command, "pytest {tests}"]

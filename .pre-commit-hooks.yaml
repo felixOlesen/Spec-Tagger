@@ -1,0 +1,17 @@
+- id: spectagger-tag-check
+  name: Validate spec tags
+  description: Checks spec-to-test tag links without running tests
+  entry: spectagger --tag_check
+  language: python
+  files: ^(features/|tests/)
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: spectagger-run
+  name: Run spec-linked tests
+  description: Checks tags and runs the tests linked to spec items
+  entry: spectagger
+  language: python
+  files: ^(features/|tests/|spec_tagger/)
+  pass_filenames: false
+  stages: [pre-push]
