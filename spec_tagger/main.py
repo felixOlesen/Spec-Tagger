@@ -100,7 +100,8 @@ def main():
         "--verbose", action="store_true", help="Enables verbose printing"
     )
     args = parser.parse_args()
-    print(f"Arguments: {args}")
+    if args.verbose:
+        print(f"Arguments: {args}")
 
     match args.command:
         case "install-skill":
