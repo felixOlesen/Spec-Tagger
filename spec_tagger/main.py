@@ -108,12 +108,13 @@ def main():
             skill_installer.install_skill(
                 args.destination, args.force, args.install_dry_run
             )
+            return
         case "ci":
             print("CI command invoked")
-            pass
+            return
         case _:
             print("No command, running core tool...")
-            tag_test_orchestrator.run(args)
+            return tag_test_orchestrator.run(args)
 
 
 if __name__ == "__main__":

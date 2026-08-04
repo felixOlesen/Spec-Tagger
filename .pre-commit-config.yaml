@@ -1,11 +1,12 @@
+default_install_hook_types: [pre-commit, pre-push]
+
 repos:
-  - repo: local
+  - repo: https://github.com/felixOlesen/Spec-Tagger/
+    rev: main
     hooks:
       - id: spectagger-tag-check
-        name: Validate spec tags
-        entry: spectagger --tag_check
-        language: system          # use the already-installed spectagger
-        files: ^(features/|tests/)
-        pass_filenames: false
+        args: [--target_spec, features, --test_dir, tests,
+               --test_command, "pytest {tests}"]
+      - id: spectagger-run
         args: [--target_spec, features, --test_dir, tests,
                --test_command, "pytest {tests}"]

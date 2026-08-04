@@ -50,11 +50,13 @@ class Linker:
         # Display linked tags
         if self.linked_tags:
             print("\nLinked Tags:")
-            for _, value in self.linked_tags.items():
-                print(f"Spec Tag: {value['spec_tag']}")
-                for test_tag in value["test_tags"]:
-                    print(f"  Test Tag: {test_tag}")
-
+            for tag_key, value in self.linked_tags.items():
+                if value.get("test_tags"):
+                    print(f"\nSpec Tag: {value['spec_tag']}")
+                    for test_tag in value["test_tags"]:
+                        print(f"\n  Test Tag: {test_tag}")
+                else:
+                    print(f"\nWarning, null link data found for {tag_key}")
         # Display invalid tags
         if self.invalid_tags:
             print("\nInvalid Tags:")

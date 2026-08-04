@@ -80,7 +80,7 @@ class Runner:
                 spec = link["spec_tag"]
                 if self.verbose:
                     print(
-                        f"Warning: {tag_str} ({spec['file']}:{spec['line']}) "
+                        f"Warning: {tag_str} ({spec['filename']}:{spec['line']}) "
                         f"has no linked tests."
                     )
                 results[tag_str] = {

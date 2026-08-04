@@ -112,7 +112,10 @@ def run(args):
 
     if args.tag_check:
         linker.display_invalid_tags()
-        return
+        if invalid_tags:
+            return 1
+        else:
+            return 0
 
     runner = Runner(
         test_run_command=args.test_command,
@@ -135,3 +138,11 @@ def run(args):
             verbose=args.verbose,
         )
         generator.generate_report()
+
+    if test_results:
+        for _, result in test_results.items():
+            if result["fail_count"] > 0:
+                return 1
+        return 0
+    else:
+        return 1
