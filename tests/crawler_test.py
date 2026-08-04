@@ -50,8 +50,9 @@ def test_example():
 
 # feat~no_func~2
 def test_example_2():
-    assert False
+    assert True
 
 
+# feat~dead_func~1
 def test_dead_func_1():
     raise Exception
