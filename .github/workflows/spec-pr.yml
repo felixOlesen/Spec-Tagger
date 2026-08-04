@@ -1,8 +1,8 @@
 name: Full Sweep of Spec and Tests
 on:
   pull_request:
-  types: [opened, synchronize, reopened]
-  paths: ['features/**', 'tests/**', 'spec_tagger/**']
+    types: [opened, synchronize, reopened]
+    paths: ['features/**', 'tests/**', 'spec_tagger/**']
 
 permissions:
   contents: read

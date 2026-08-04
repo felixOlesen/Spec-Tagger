@@ -7,10 +7,14 @@ on:
 permissions:
   contents: read
   issues: write
+  id-token: write
 
 jobs:
   audit:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
