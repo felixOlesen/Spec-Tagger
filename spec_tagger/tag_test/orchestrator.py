@@ -39,6 +39,8 @@ def validate_args(args):
     if args.test_dir and not os.path.exists(args.test_dir):
         raise ValueError(f"test_dir '{args.test_dir}' does not exist")
 
+    print("Args Validated Successfully")
+
 
 def run(args):
     validate_args(args)
