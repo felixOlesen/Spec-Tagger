@@ -1,6 +1,7 @@
 import json
 import os
 import importlib.resources as pkg_resources
+from pathlib import Path
 
 
 class Generator:
@@ -16,6 +17,8 @@ class Generator:
         invalid_tags: list | None,
         successful_links: dict | None,
         one_by_one: bool,
+        tag_coverage_data: dict,
+        test_coverage_location: str,
         verbose: bool,
     ):
         self.report_output_dir = report_output_dir
@@ -27,6 +30,9 @@ class Generator:
         self.verbose = verbose
         self.output_object = {}
         self.report_name = "report.json"
+        self.tag_coverage_data = tag_coverage_data
+        self.test_coverage_location = test_coverage_location
+        self.all_coverage_data = None
 
     def generate_report(self):
         self._construct_report_object()
@@ -69,9 +75,14 @@ class Generator:
         if not self.test_output:
             print("Warning test_output found to be null on test generation")
             return
+
+        if self.test_coverage_location:
+            self.all_coverage_data = self.parse_coveragepy_json()
+
         self.output_object["one_by_one"] = self.one_by_one
         self.output_object["test_results"] = self.test_output
         self.output_object["invalid_tags"] = self.invalid_tags
+        self.output_object["coverage_date"] = self.all_coverage_data
 
         for _, links in self.successful_links.items():
             full_tag = links["spec_tag"]["full_tag"]
@@ -153,6 +164,11 @@ class Generator:
             print(f"Reason: {tag['validity']['reasons']}")
 
         print("\n")
+
+    def parse_coveragepy_json(self) -> dict[str, set[int]]:
+        path = self.test_coverage_location
+        data = json.loads(Path(path).read_text())
+        return {f: set(v["executed_lines"]) for f, v in data["files"].items()}
 
     def _copy_template_file(self, file_name):
         template_content = (

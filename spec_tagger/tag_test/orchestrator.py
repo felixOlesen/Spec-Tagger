@@ -46,6 +46,11 @@ def validate_args(args):
     if args.test_dir and not os.path.exists(args.test_dir):
         raise ValueError(f"test_dir '{args.test_dir}' does not exist")
 
+    if args.test_coverage_location and not os.path.isfile(args.test_coverage_location):
+        raise ValueError(
+            f"test_coverage_location '{args.test_coverage_location}' does not exist."
+        )
+
     print("Args Validated Successfully")
 
 
@@ -103,6 +108,7 @@ def run(args):
 
     # Run Test Crawl for test tags and test function signatures and line numbers
     test_tag_data = test_crawler.run()
+    tag_coverage_data = test_crawler.get_coverage_data()
 
     # Checking for if the --target_spec arg is a list of files or a single spec file
     spec_subset_presence = False
@@ -111,6 +117,12 @@ def run(args):
     if type(target_spec) is str:
         if not os.path.isdir(target_spec) and os.path.isfile(target_spec):
             spec_subset_presence = True
+
+    if not spec_tag_data or not test_tag_data:
+        print(
+            "Warning, no spec data or tag data was missing after crawling, please double check your tags"
+        )
+        return 1
 
     linker = Linker(
         spec_data=spec_tag_data,
@@ -152,6 +164,8 @@ def run(args):
             invalid_tags=invalid_tags,
             successful_links=links,
             one_by_one=args.one_by_one,
+            tag_coverage_data=tag_coverage_data,
+            test_coverage_location=args.coverage_report_path,
             verbose=args.verbose,
         )
         generator.generate_report()

@@ -21,17 +21,6 @@ class Crawler:
         # Example Tag: feat~MyFeature~1
         self.tag_regex = re.compile(TAG_PATTERN)
         self.tagless_files = set()
-        self.missed_tests_in_tagged_files = {}
-
-    def run(self):
-        self.crawl_files()
-        if not self.files:
-            print("No files found. Exiting.")
-            return
-
-        self.extract_tags()
-
-        return self.tag_data
 
     def crawl_files(self):
 
@@ -120,6 +109,7 @@ class TestCrawler(Crawler):
         self.framework = framework
         self.tag_data = TestTagData()
         self.test_declarations = {}
+        self.missed_tests_in_tagged_files = {}
 
     def run(self):
         self.crawl_files()
@@ -129,10 +119,19 @@ class TestCrawler(Crawler):
             return None
 
         self.extract_tags()
+
         if self.framework:
             self.extract_and_assign_test_declarations()
             self._crawl_for_uncovered_tests()
+
         return self.tag_data
+
+    def get_coverage_data(self) -> dict:
+        missing_coverage_data = {
+            "files": self.tagless_files,
+            "tests": self.missed_tests_in_tagged_files,
+        }
+        return missing_coverage_data
 
     def extract_and_assign_test_declarations(self):
         # get mapping of filenames to tag data
@@ -310,6 +309,16 @@ class SpecCrawler(Crawler):
         if enabled_extensions:
             self.enabled_extensions.update(enabled_extensions)
         self.tag_data = SpecTagData()
+
+    def run(self):
+        self.crawl_files()
+        if not self.files:
+            print("No files found. Exiting.")
+            return
+
+        self.extract_tags()
+
+        return self.tag_data
 
     def crawl_files(self):
         # Logic to crawl through the spec_dir and find spec files with enabled extensions.

@@ -113,6 +113,13 @@ def main():
     parser.add_argument(
         "--verbose", action="store_true", help="Enables verbose printing"
     )
+
+    parser.add_argument(
+        "--coverage_report_path",
+        default=None,
+        help="Path to be provided by the user for where the coverage output report is being generated.",
+    )
+
     args = parser.parse_args()
     if args.verbose:
         print(f"Arguments: {args}")
