@@ -5,7 +5,9 @@ from spec_tagger.tag_test.spec_test_data import SpecTagData, TestTagData
 from spec_tagger.tag_test.spec_test_linker import Linker
 
 
-def add_spec_tag(spec_data, name, revision, tag_type="feat", filename="spec.feature", line=1):
+def add_spec_tag(
+    spec_data, name, revision, tag_type="feat", filename="spec.feature", line=1
+):
     spec_data.add_tag(
         filename=filename,
         line=line,
@@ -75,7 +77,9 @@ def test_matching_tag_and_revision_links_successfully():
 
     assert invalid == []
     assert linked["feat~x"]["spec_tag"]["validity"]["valid"] is True
-    assert [t["full_tag"] for t in linked["feat~x"]["test_tags"]] == [tag_id("feat", "x", 1)]
+    assert [t["full_tag"] for t in linked["feat~x"]["test_tags"]] == [
+        tag_id("feat", "x", 1)
+    ]
 
 
 # confidence: 95
@@ -96,7 +100,10 @@ def test_spec_tag_with_no_matching_test_is_invalid():
     assert linked["feat~x"]["test_tags"] is None
     assert linked["feat~x"]["spec_tag"]["validity"]["valid"] is False
     assert invalid == [linked["feat~x"]["spec_tag"]]
-    assert "Spec tag has no corresponding valid test tag." in invalid[0]["validity"]["reasons"]
+    assert (
+        "Spec tag has no corresponding valid test tag."
+        in invalid[0]["validity"]["reasons"]
+    )
 
     # The matched pair is unaffected.
     assert linked["feat~y"]["spec_tag"]["validity"]["valid"] is True
@@ -132,7 +139,10 @@ def test_test_tag_with_no_matching_spec_is_invalid_when_spec_subset():
     assert list(linked.keys()) == ["feat~known"]
     assert len(invalid) == 1
     assert invalid[0]["full_tag"] == tag_id("feat", "orphan", 1)
-    assert "Test tag has no corresponding valid spec tag." in invalid[0]["validity"]["reasons"]
+    assert (
+        "Test tag has no corresponding valid spec tag."
+        in invalid[0]["validity"]["reasons"]
+    )
 
 
 @pytest.mark.skip(
@@ -153,6 +163,10 @@ def test_orphan_test_tag_raises_keyerror_without_spec_subset():
     linker.link_data()
 
 
+def test_tagless_function():
+    assert True
+
+
 # confidence: 95
 # story~linker_flags_revision_mismatch~1
 def test_spec_revision_higher_than_test_revision_leaves_spec_unlinked():
@@ -171,8 +185,14 @@ def test_spec_revision_higher_than_test_revision_leaves_spec_unlinked():
     assert linked["feat~x"]["test_tags"] is None
 
     reasons = {tag["full_tag"]: tag["validity"]["reasons"][0] for tag in invalid}
-    assert reasons[tag_id("feat", "x", 1)] == "Revision number is outdated compared to other tags with the same identifier."
-    assert reasons[tag_id("feat", "x", 2)] == "Spec tag has no corresponding valid test tag."
+    assert (
+        reasons[tag_id("feat", "x", 1)]
+        == "Revision number is outdated compared to other tags with the same identifier."
+    )
+    assert (
+        reasons[tag_id("feat", "x", 2)]
+        == "Spec tag has no corresponding valid test tag."
+    )
 
 
 # confidence: 95
@@ -193,8 +213,14 @@ def test_test_revision_higher_than_spec_revision_leaves_spec_unlinked():
     assert linked == {}
 
     reasons = {tag["full_tag"]: tag["validity"]["reasons"][0] for tag in invalid}
-    assert reasons[tag_id("feat", "x", 1)] == "Revision number is outdated compared to other tags with the same identifier."
-    assert reasons[tag_id("feat", "x", 2)] == "Test tag has no corresponding valid spec tag."
+    assert (
+        reasons[tag_id("feat", "x", 1)]
+        == "Revision number is outdated compared to other tags with the same identifier."
+    )
+    assert (
+        reasons[tag_id("feat", "x", 2)]
+        == "Test tag has no corresponding valid spec tag."
+    )
 
 
 # confidence: 95
@@ -211,8 +237,12 @@ def test_duplicate_spec_tags_are_invalidated_and_unlinked():
 
     assert linked == {}
     invalid_by_file = {tag["filename"]: tag["validity"]["reasons"] for tag in invalid}
-    assert invalid_by_file["a.feature"] == ["Duplicate tags found in the specification."]
-    assert invalid_by_file["b.feature"] == ["Duplicate tags found in the specification."]
+    assert invalid_by_file["a.feature"] == [
+        "Duplicate tags found in the specification."
+    ]
+    assert invalid_by_file["b.feature"] == [
+        "Duplicate tags found in the specification."
+    ]
     assert "Test tag has no corresponding valid spec tag." in invalid_by_file["test.py"]
 
 
@@ -229,7 +259,9 @@ def test_test_tag_without_test_function_is_invalid():
 
     assert linked["feat~x"]["test_tags"] is None
     reasons = {tag["full_tag"]: tag["validity"]["reasons"] for tag in invalid}
-    assert reasons[tag_id("feat", "x", 1)] == ["No test function was found following the tag."]
+    assert reasons[tag_id("feat", "x", 1)] == [
+        "No test function was found following the tag."
+    ]
 
 
 # confidence: 95
@@ -347,8 +379,12 @@ def test_full_pipeline_links_example_fixtures():
 
     assert linked["feat~example_tag"]["spec_tag"]["validity"]["valid"] is True
     assert linked["feat~example_tag_2"]["spec_tag"]["validity"]["valid"] is True
-    assert linked["feat~example_tag"]["test_tags"][0]["full_tag"] == tag_id("feat", "example_tag", 1)
-    assert linked["feat~example_tag_2"]["test_tags"][0]["full_tag"] == tag_id("feat", "example_tag_2", 1)
+    assert linked["feat~example_tag"]["test_tags"][0]["full_tag"] == tag_id(
+        "feat", "example_tag", 1
+    )
+    assert linked["feat~example_tag_2"]["test_tags"][0]["full_tag"] == tag_id(
+        "feat", "example_tag_2", 1
+    )
     assert not any(tag["full_tag"].startswith("feat~example_tag") for tag in invalid)
 
 

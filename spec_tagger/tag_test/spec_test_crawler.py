@@ -20,6 +20,8 @@ class Crawler:
         # [feat or story or step]~[FEATURE NAME]~[REVISION NUMBER]
         # Example Tag: feat~MyFeature~1
         self.tag_regex = re.compile(TAG_PATTERN)
+        self.tagless_files = set()
+        self.missed_tests_in_tagged_files = {}
 
     def run(self):
         self.crawl_files()
@@ -73,10 +75,14 @@ class Crawler:
                             content=None,
                             item_start_line=line_num,
                         )
+                if file not in self.tag_data.file_to_tag:
+                    self.tagless_files.add(file)
         if self.verbose:
             for file, tags in self.tag_data.file_to_tag.items():
                 if len(tags) > 0:
                     print(f"Found tags in {file}")
+            for tagless_file in self.tagless_files:
+                print(f"No tags were found in {tagless_file}")
 
 
 class TestCrawler(Crawler):
@@ -113,6 +119,7 @@ class TestCrawler(Crawler):
         }
         self.framework = framework
         self.tag_data = TestTagData()
+        self.test_declarations = {}
 
     def run(self):
         self.crawl_files()
@@ -124,6 +131,7 @@ class TestCrawler(Crawler):
         self.extract_tags()
         if self.framework:
             self.extract_and_assign_test_declarations()
+            self._crawl_for_uncovered_tests()
         return self.tag_data
 
     def extract_and_assign_test_declarations(self):
@@ -152,6 +160,8 @@ class TestCrawler(Crawler):
                 lines = f.readlines()
 
             line_cache = {}
+            if filename not in self.test_declarations:
+                self.test_declarations[filename] = set()
 
             for tag in tags:
                 if tag["line"] in line_cache:
@@ -194,6 +204,13 @@ class TestCrawler(Crawler):
                 tag["item_start_line"] = found_at
                 line_cache[tag["line"]] = (found, found_at)
 
+                if tag["test_function"] in self.test_declarations[filename]:
+                    print(
+                        "Warning, duplicate function names found when extracting test functions"
+                    )
+
+                self.test_declarations[filename].add(tag["test_function"])
+
                 if self.verbose:
                     print(f"Test Function found: {found}\nAt: {filename}:{found_at}")
 
@@ -218,6 +235,71 @@ class TestCrawler(Crawler):
                 if indent == 0:
                     break
         return list(reversed(path))
+
+    def _crawl_for_uncovered_tests(self):
+
+        if not self.framework:
+            print("Warning, exited due to null framework test function extraction.")
+            return
+
+        FW_INFO = FRAMEWORKS[self.framework]
+        func_pattern = FW_INFO.get("func")
+        describe_pattern = FW_INFO.get("describe")
+        example_pattern = FW_INFO.get("example")
+        skip_prefixes = FW_INFO["skip_prefixes"]
+
+        for file, tags in self.tag_data.file_to_tag.items():
+            with open(file, "r", encoding="utf-8-sig") as f:
+                lines = f.readlines()
+            skippable_lines = set()
+            for tag in tags:
+                skippable_lines.add(tag["line"])
+                skippable_lines.add(tag["item_start_line"])
+            found, found_at = None, None
+            start = 1
+            for line_num, line in enumerate(lines, start=1):
+                if line_num in skippable_lines:
+                    continue
+
+                stripped = line.strip()
+                if not stripped or stripped.startswith(skip_prefixes):
+                    continue
+
+                if describe_pattern and example_pattern:
+                    m = example_pattern.match(line)
+                    if m:
+                        desc = m.group(1)
+                        path = self._describe_path(
+                            lines, start + line_num, describe_pattern
+                        )
+                        found = " > ".join(path + [desc])
+                        found_at = line_num
+                        self._add_missed_test_tag(found, file, found_at)
+                    if describe_pattern.match(line):
+                        continue
+                elif func_pattern is not None:
+                    m = func_pattern.match(line)
+                    if m:
+                        found = next((g for g in m.groups() if g is not None), None)
+                        found_at = line_num
+                        self._add_missed_test_tag(found, file, found_at)
+        if self.verbose:
+            if self.missed_tests_in_tagged_files:
+                print(
+                    "Warning, Found at least one test in tagged test files that are not covered by a tag, please tag these tests"
+                )
+                for test, info in self.missed_tests_in_tagged_files.items():
+                    print(f"{test}, found at: {info['file']}:{info['line']}")
+            else:
+                print("All tests haven't been covered in files with tags in them.")
+
+    def _add_missed_test_tag(self, test_signature: str | None, file: str, line: int):
+        if not test_signature:
+            print(
+                "Warning, test signature found to be null when adding a missed test to the list."
+            )
+            return
+        self.missed_tests_in_tagged_files[test_signature] = {"file": file, "line": line}
 
 
 class SpecCrawler(Crawler):
