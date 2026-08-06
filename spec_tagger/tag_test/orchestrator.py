@@ -14,14 +14,18 @@ def validate_args(args):
 
     if not args.test_command:
         raise ValueError("test_command is required")
+
     if args.report and not args.report_output:
         raise ValueError("report_output is required when report is enabled")
+
     if args.report and args.report_type not in ["json", "html", "stdout"]:
         raise ValueError("Invalid report_type. Must be one of: json, html, stdout")
+
     if args.report and not os.path.isdir(args.report_output):
         raise ValueError(
             f"report_output '{args.report_output}' is not a valid directory"
         )
+
     tag_regex = re.compile(TAG_PATTERN)
     if args.target_tag:
         m = tag_regex.search(args.target_tag)
@@ -29,9 +33,12 @@ def validate_args(args):
             raise ValueError(
                 f"target_tag provided: {args.target_tag}, doesn't match the format feat/story/step~name~revision_number"
             )
+
     if not args.target_spec:
         raise ValueError("target_spec value found to be null on validation.")
+
     target_spec = args.target_spec.split(",")
+
     for target in target_spec:
         if target and not os.path.exists(target):
             raise ValueError(f"target_spec '{target}' does not exist")
@@ -45,6 +52,8 @@ def validate_args(args):
 def run(args):
     validate_args(args)
 
+    # In the case that a list of files have been given to run, split by comma
+    # Then strip whitespace
     target_spec_list = args.target_spec.split(",")
     target_spec = args.target_spec
     if len(target_spec_list) == 1:
@@ -61,16 +70,19 @@ def run(args):
         if args.spec_file_extensions
         else None,
     )
+
+    # Initiate Spec Crawl to collect spec tags
     spec_tag_data = spec_crawler.run()
+
+    # Check for specific testing framework support
     framework = None
     matches = None
-    fw_override_failed = False
     if args.test_framework:
         framework_exists = framework_support_check(args.test_framework)
         if not framework_exists:
             framework, matches = detect_framework(args.test_framework)
 
-    if not args.test_framework or fw_override_failed:
+    if not args.test_framework:
         framework, matches = detect_framework(args.test_command)
 
     if framework:
@@ -88,7 +100,11 @@ def run(args):
         else None,
         framework=framework,
     )
+
+    # Run Test Crawl for test tags and test function signatures and line numbers
     test_tag_data = test_crawler.run()
+
+    # Checking for if the --target_spec arg is a list of files or a single spec file
     spec_subset_presence = False
     if type(target_spec) is list:
         spec_subset_presence = True
@@ -103,14 +119,13 @@ def run(args):
         verbose=args.verbose,
         spec_subset=spec_subset_presence,
     )
+
+    # Link up the test tag data and spec tag data while flagging invalid tags
     linked_data = linker.link_data()
     links = None
     invalid_tags = None
     if linked_data:
         links, invalid_tags = linked_data
-
-    if args.verbose:
-        linker.display_data()
 
     if args.tag_check:
         linker.display_invalid_tags()

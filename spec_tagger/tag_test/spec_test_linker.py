@@ -8,7 +8,7 @@ class Linker:
         test_data: TestTagData,
         target_tag: str | None,
         verbose: bool,
-        spec_subset=False,
+        spec_subset: bool = False,
     ):
         self.spec_data = spec_data
         self.test_data = test_data
@@ -131,6 +131,8 @@ class Linker:
         #    if v["test_tags"] is not None and len(v["test_tags"]) > 0
         # }
         self.invalid_tag_sweep()
+        if self.verbose:
+            self.display_data()
 
         return self.linked_tags, self.invalid_tags
 
