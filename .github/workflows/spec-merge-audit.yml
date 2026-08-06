@@ -1,7 +1,8 @@
-name: Scheduled Spec Audit
+name: Post-Merge Audit
 on:
-  schedule:
-    - cron: '0 8 * * 3'
+  push:
+    branches: [main]
+    path: ['features/**', 'tests/**', 'spec_tagger/**']
   workflow_dispatch:
 
 permissions:
