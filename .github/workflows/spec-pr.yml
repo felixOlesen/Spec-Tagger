@@ -23,9 +23,7 @@ jobs:
       
       - name: Run SpecTagger
         id: spec_tagger_testing
-        run: spectagger --target_spec features --test_dir tests \
-                        --test_command "pytest {tests}" \
-                        --report --report_type stdout
+        run: spectagger --target_spec features --test_dir tests --test_command "pytest {tests}" --report --report_type stdout
         continue-on-error: true
 
       - name: Gate
