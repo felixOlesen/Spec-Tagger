@@ -1,5 +1,6 @@
 import argparse
 from spec_tagger.tag_test import orchestrator as tag_test_orchestrator
+from spec_tagger.ci import orchestrator as ci_orchestrator
 import spec_tagger.agent_skill.skill_installer as skill_installer
 
 
@@ -26,7 +27,20 @@ def main():
         action="store_true",
     )
 
-    # CORE TOOL Args
+    # CI ARGS
+    ci_parser.add_argument(
+        "--report_input",
+        help="Tells the program where the report.json is for analysing the test results from a spectagger run.",
+        default="report",
+    )
+
+    ci_parser.add_argument(
+        "--no_ai",
+        help="Runs the CI without AI tooling in case it's not available to the user.",
+        action="store_true",
+    )
+
+    # CORE TOOL ARGS
     parser.add_argument(
         "--target_spec",
         default="features",
@@ -112,8 +126,7 @@ def main():
             return
         case "ci":
             print("CI command invoked")
-
-            return
+            return ci_orchestrator.run(args=args)
         case _:
             print("No command, running core tool...")
             return tag_test_orchestrator.run(args)
