@@ -46,11 +46,6 @@ def validate_args(args):
     if args.test_dir and not os.path.exists(args.test_dir):
         raise ValueError(f"test_dir '{args.test_dir}' does not exist")
 
-    if args.test_coverage_location and not os.path.isfile(args.test_coverage_location):
-        raise ValueError(
-            f"test_coverage_location '{args.test_coverage_location}' does not exist."
-        )
-
     print("Args Validated Successfully")
 
 
@@ -152,6 +147,8 @@ def run(args):
         test_join=args.test_join,
         linked_tags=links,
         one_by_one=args.one_by_one,
+        test_coverage_location=args.coverage_report_path,
+        coverage_library=args.coverage_library,
         verbose=args.verbose,
     )
     test_results = runner.run_tests(args.dry_run)
@@ -166,6 +163,7 @@ def run(args):
             one_by_one=args.one_by_one,
             tag_coverage_data=tag_coverage_data,
             test_coverage_location=args.coverage_report_path,
+            test_coverage_library=args.coverage_library,
             verbose=args.verbose,
         )
         generator.generate_report()

@@ -120,6 +120,13 @@ def main():
         help="Path to be provided by the user for where the coverage output report is being generated.",
     )
 
+    parser.add_argument(
+        "--coverage_library",
+        default=None,
+        help="The specific coverage library to parse a report for.",
+        choices=["python.coverage", "ruby.simplecov"],
+    )
+
     args = parser.parse_args()
     if args.verbose:
         print(f"Arguments: {args}")
