@@ -15,13 +15,25 @@ def validate_args(args):
     if not args.test_command:
         raise ValueError("test_command is required")
 
-    if args.report and not args.report_output:
+    if (
+        args.report
+        and args.report_output
+        and not args.report_output
+        and args.report_type == "html"
+        or args.report_type == "json"
+    ):
         raise ValueError("report_output is required when report is enabled")
 
     if args.report and args.report_type not in ["json", "html", "stdout"]:
         raise ValueError("Invalid report_type. Must be one of: json, html, stdout")
 
-    if args.report and not os.path.isdir(args.report_output):
+    if (
+        args.report
+        and args.report_output
+        and not os.path.isdir(args.report_output)
+        and args.report_type == "html"
+        or args.report_type == "json"
+    ):
         raise ValueError(
             f"report_output '{args.report_output}' is not a valid directory"
         )
@@ -103,6 +115,7 @@ def run(args):
 
     # Run Test Crawl for test tags and test function signatures and line numbers
     test_tag_data = test_crawler.run()
+    tag_coverage_data = test_crawler.get_coverage_data()
 
     # Checking for if the --target_spec arg is a list of files or a single spec file
     spec_subset_presence = False
@@ -111,6 +124,12 @@ def run(args):
     if type(target_spec) is str:
         if not os.path.isdir(target_spec) and os.path.isfile(target_spec):
             spec_subset_presence = True
+
+    if not spec_tag_data or not test_tag_data:
+        print(
+            "Warning, no spec data or tag data was missing after crawling, please double check your tags"
+        )
+        return 1
 
     linker = Linker(
         spec_data=spec_tag_data,
@@ -140,6 +159,8 @@ def run(args):
         test_join=args.test_join,
         linked_tags=links,
         one_by_one=args.one_by_one,
+        test_coverage_location=args.coverage_report_path,
+        coverage_library=args.coverage_library,
         verbose=args.verbose,
     )
     test_results = runner.run_tests(args.dry_run)
@@ -152,6 +173,9 @@ def run(args):
             invalid_tags=invalid_tags,
             successful_links=links,
             one_by_one=args.one_by_one,
+            tag_coverage_data=tag_coverage_data,
+            test_coverage_location=args.coverage_report_path,
+            test_coverage_library=args.coverage_library,
             verbose=args.verbose,
         )
         generator.generate_report()

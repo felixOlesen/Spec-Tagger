@@ -10,7 +10,10 @@ document.addEventListener("DOMContentLoaded", () => {
   if (data.one_by_one) {
     document.getElementById("one-by-one-header").innerHTML = "<em>One-by-one Mode</em>";
   }
+  const coverageData = data.coverage_data || {};
   renderTestResults(data.test_results || {}, data.one_by_one || false);
+  renderCoverage(coverageData.test_coverage || {});
+  renderMissedFilesTests(coverageData.tag_coverage || {});
   renderInvalidTags(data.invalid_tags || []);
 });
 
@@ -125,6 +128,168 @@ function renderTestResults(results, one_by_one) {
     target.classList.toggle("hidden");
     row.classList.toggle("expanded");
   });
+}
+
+function renderCoverage(testCoverage) {
+  const container = document.getElementById("coverage-container");
+  const tagEntries = Object.entries(testCoverage || {});
+
+  if (tagEntries.length === 0) {
+    container.innerHTML = "<p class='meta-info'>No coverage data available.</p>";
+    return;
+  }
+
+  let rowsHtml = "";
+
+  tagEntries.forEach(([tag, files], tagIndex) => {
+    const fileEntries = Object.entries(files || {});
+    const rowId = `coverage-${tagIndex}-detail`;
+    const canExpand = fileEntries.length > 0;
+
+    // Weight each file's reported coverage percent by how many lines it contributes.
+    let weightedSum = 0;
+    let totalWeight = 0;
+    fileEntries.forEach(([, fileData]) => {
+      const covered = (fileData.covered_lines || []).length;
+      const missing = (fileData.missing_lines || []).length;
+      const weight = covered + missing;
+      weightedSum += (fileData.coverage || 0) * weight;
+      totalWeight += weight;
+    });
+    const overallPercent = totalWeight > 0 ? weightedSum / totalWeight : 0;
+    const badgeClass = coverageBadgeClass(overallPercent);
+
+    rowsHtml += `
+      <tr class="spec-row${canExpand ? " expandable" : ""}" ${canExpand ? `data-target="${rowId}"` : ""}>
+        <td>
+          <div class="spec-name">${canExpand ? `<span class="chevron">&#9656;</span>` : ""}${escapeHtml(tag)}</div>
+        </td>
+        <td>${fileEntries.length}</td>
+        <td><span class="badge ${badgeClass}">${overallPercent.toFixed(1)}%</span></td>
+      </tr>
+    `;
+
+    if (canExpand) {
+      const filesHtml = fileEntries
+        .map(([file, fileData]) => {
+          const covered = fileData.covered_lines || [];
+          const missing = fileData.missing_lines || [];
+          const percent = fileData.coverage ?? 0;
+          const fileBadgeClass = coverageBadgeClass(percent);
+
+          return `
+            <tr class="run-row">
+              <td class="cmd-cell">${escapeHtml(file)}</td>
+              <td><span class="badge ${fileBadgeClass}">${Number(percent).toFixed(1)}%</span></td>
+              <td>${covered.length}</td>
+              <td>${missing.length}</td>
+              <td>${missing.length > 0 ? `<code class="code-inline">${escapeHtml(missing.join(", "))}</code>` : "&mdash;"}</td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      rowsHtml += `
+        <tr id="${rowId}" class="detail-row hidden">
+          <td colspan="3">
+            <table class="run-table">
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Coverage</th>
+                  <th>Covered Lines</th>
+                  <th>Missing Lines</th>
+                  <th>Missing Line Numbers</th>
+                </tr>
+              </thead>
+              <tbody>${filesHtml}</tbody>
+            </table>
+          </td>
+        </tr>
+      `;
+    }
+  });
+
+  container.innerHTML = `
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>Tag</th>
+          <th>Files Covered</th>
+          <th>Overall Coverage</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  `;
+
+  container.addEventListener("click", event => {
+    const row = event.target.closest(".spec-row.expandable");
+    if (!row) return;
+    const target = document.getElementById(row.dataset.target);
+    if (!target) return;
+    target.classList.toggle("hidden");
+    row.classList.toggle("expanded");
+  });
+}
+
+function coverageBadgeClass(percent) {
+  if (percent >= 80) return "badge-pass";
+  if (percent >= 50) return "badge-untested";
+  return "badge-fail";
+}
+
+function renderMissedFilesTests(tagCoverage) {
+  const container = document.getElementById("missed-container");
+  const files = Array.from(tagCoverage.files || []);
+  const testEntries = Object.entries(tagCoverage.tests || {});
+
+  if (files.length === 0 && testEntries.length === 0) {
+    container.innerHTML = "<p class='meta-info'>No missing files or tests found.</p>";
+    return;
+  }
+
+  const filesHtml = files.length > 0
+    ? `<ul class="linked-tests">${files
+      .map(file => `<li>${escapeHtml(file)}</li>`)
+      .join("")}</ul>`
+    : `<p class="meta-info">No untagged files found.</p>`;
+
+  const testsHtml = testEntries.length > 0
+    ? `
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Test</th>
+            <th>File</th>
+            <th>Line</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${testEntries
+            .map(([testSignature, info]) => `
+              <tr>
+                <td>${escapeHtml(testSignature)}</td>
+                <td>${escapeHtml(info.file)}</td>
+                <td>${escapeHtml(String(info.line))}</td>
+              </tr>
+            `)
+            .join("")}
+        </tbody>
+      </table>
+    `
+    : `<p class="meta-info">No untagged tests found.</p>`;
+
+  container.innerHTML = `
+    <div class="subsection">
+      <h3>Untagged Files</h3>
+      ${filesHtml}
+    </div>
+    <div class="subsection">
+      <h3>Untagged Tests</h3>
+      ${testsHtml}
+    </div>
+  `;
 }
 
 function renderInvalidTags(tags) {

@@ -229,3 +229,5 @@ pyrightconfig.json
 # Spec Tagger
 report/
 report/*
+coverage_reports/
+coverage_reports/*

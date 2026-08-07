@@ -12,6 +12,8 @@ class Runner:
         test_join: str,
         linked_tags: dict | None,
         one_by_one: bool,
+        test_coverage_location: str,
+        coverage_library: str,
         verbose: bool,
     ):
         self.test_run_command = test_run_command
@@ -19,6 +21,8 @@ class Runner:
         self.linked_tags = linked_tags
         self.test_join = test_join
         self.one_by_one = one_by_one
+        self.test_coverage_location = test_coverage_location
+        self.coverage_library = coverage_library
         self.verbose = verbose
 
     def format_target(self, tag: dict):
@@ -69,7 +73,8 @@ class Runner:
         if not self.linked_tags:
             print("Warning linked tags found to be null on run, exiting.")
             return
-
+        if self.coverage_library:
+            subprocess.run(["mkdir", self.test_coverage_location])
         for _, link in self.linked_tags.items():
             if link["test_tags"]:
                 targets = self.build_targets_for_link(link)
@@ -106,13 +111,25 @@ class Runner:
                         print("  Command:", " ".join(shlex.quote(p) for p in command))
                 continue
 
+            if self.coverage_library == "python.coverage":
+                subprocess.run(["coverage", "erase"])
+
             print(f"Running tests for {tag_str} ...")
             start_time = time.perf_counter()
             res = []
 
-            for command in command_list:
+            for index, command in enumerate(command_list):
                 res.append(subprocess.run(command, capture_output=True, text=True))
             end_time = time.perf_counter()
+            if self.coverage_library == "python.coverage":
+                subprocess.run(
+                    [
+                        "coverage",
+                        "json",
+                        "-o",
+                        f"{self.test_coverage_location}/{tag_str}_cov.json",
+                    ]
+                )
 
             results[tag_str] = {
                 "test_date": str(datetime.datetime.now()),
