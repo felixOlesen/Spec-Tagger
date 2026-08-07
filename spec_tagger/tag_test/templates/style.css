@@ -194,6 +194,19 @@ body {
     word-break: break-all;
 }
 
+.subsection {
+    padding: 1rem;
+}
+
+.subsection:not(:last-child) {
+    border-bottom: 1px solid var(--border);
+}
+
+.subsection h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+}
+
 .detail-row.hidden {
     display: none;
 }

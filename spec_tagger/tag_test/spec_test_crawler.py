@@ -128,7 +128,7 @@ class TestCrawler(Crawler):
 
     def get_coverage_data(self) -> dict:
         missing_coverage_data = {
-            "files": self.tagless_files,
+            "files": list(self.tagless_files),
             "tests": self.missed_tests_in_tagged_files,
         }
         return missing_coverage_data

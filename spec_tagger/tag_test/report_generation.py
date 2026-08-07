@@ -17,7 +17,7 @@ class Generator:
         invalid_tags: list | None,
         successful_links: dict | None,
         one_by_one: bool,
-        tag_coverage_data: dict,
+        tag_coverage_data: dict[str, set],
         test_coverage_location: str,
         test_coverage_library: str,
         verbose: bool,
@@ -175,11 +175,12 @@ class Generator:
             for tag, data in self.output_object["coverage_data"][
                 "test_coverage"
             ].items():
+                print(f"\nCoverage for Tag {tag}")
                 for file, file_cov_data in data.items():
-                    print(f"Coverage for {file}\n")
+                    print(f"Coverage for {file}")
                     print(f"Lines Covered: {len(file_cov_data['covered_lines'])}")
                     print(f"Missing Lines: {len(file_cov_data['missing_lines'])}")
-                    print(f"Percent Covered: {file_cov_data['coverage']}")
+                    print(f"Percent Covered: {file_cov_data['coverage']}\n")
 
         print("\n---------- Missed Files/Tests ----------")
         if (
@@ -213,8 +214,7 @@ class Generator:
             for root, _, files in os.walk(self.test_coverage_location):
                 for file in files:
                     if file.endswith(".json"):
-                        print(file.split("_cov"))
-                        file_components = file.split("_")
+                        file_components = file.split("_cov")
                         full_tag = file_components[0]
                         print(f"json report found: {file}")
 

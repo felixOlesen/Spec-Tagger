@@ -111,6 +111,9 @@ class Runner:
                         print("  Command:", " ".join(shlex.quote(p) for p in command))
                 continue
 
+            if self.coverage_library == "python.coverage":
+                subprocess.run(["coverage", "erase"])
+
             print(f"Running tests for {tag_str} ...")
             start_time = time.perf_counter()
             res = []
