@@ -102,7 +102,7 @@ def main():
     )
     parser.add_argument("--report", help="Generate a report", action="store_true")
     parser.add_argument(
-        "--report_output", default="report", help="Directory to output the report"
+        "--report_output", default=None, help="Directory to output the report"
     )
     parser.add_argument(
         "--report_type",
