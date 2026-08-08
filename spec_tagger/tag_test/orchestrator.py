@@ -17,12 +17,12 @@ def validate_args(args):
 
     if (
         args.report
-        and args.report_output
         and not args.report_output
-        and args.report_type == "html"
-        or args.report_type == "json"
+        and (args.report_type == "html" or args.report_type == "json")
     ):
-        raise ValueError("report_output is required when report is enabled")
+        raise ValueError(
+            f"report_output '{args.report_output}' is required when report is enabled"
+        )
 
     if args.report and args.report_type not in ["json", "html", "stdout"]:
         raise ValueError("Invalid report_type. Must be one of: json, html, stdout")
@@ -31,8 +31,7 @@ def validate_args(args):
         args.report
         and args.report_output
         and not os.path.isdir(args.report_output)
-        and args.report_type == "html"
-        or args.report_type == "json"
+        and (args.report_type == "html" or args.report_type == "json")
     ):
         raise ValueError(
             f"report_output '{args.report_output}' is not a valid directory"

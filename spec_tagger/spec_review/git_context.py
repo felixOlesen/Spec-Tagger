@@ -38,7 +38,7 @@ def collect_context(base: str | None = None, head: str | None = None):
             or "origin/main"
         )
     if not head:
-        base = pr.get("head", {}).get("sha") or os.environ.get("GITHUB_SHA") or "HEAD"
+        head = pr.get("head", {}).get("sha") or os.environ.get("GITHUB_SHA") or "HEAD"
 
     diff_range = f"{base}...{head}"
 
@@ -47,7 +47,9 @@ def collect_context(base: str | None = None, head: str | None = None):
         "head": head,
         "diff": _git("diff", diff_range),
         "changed_files": _git("diff", "--name-only", diff_range).splitlines(),
-        "commit_messages": _git("log", "--format=%s%n%n%b", diff_range).split("\x00"),
+        "commit_messages": _git("log", "--format=%s%n%n%b%x00", diff_range).split(
+            "\x00"
+        ),
         "pr_title": pr.get("title"),
         "pr_description": pr.get("body"),
         "pr_number": pr.get("number"),
