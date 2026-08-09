@@ -1,5 +1,5 @@
 from spec_tagger.spec_review import git_context
-from spec_tagger.tag_test.spec_test_linker import Invalidities
+from spec_tagger.tag_test.spec_test_data import Invalidities
 from enum import Enum
 from spec_tagger.spec_review.solution import Solution
 

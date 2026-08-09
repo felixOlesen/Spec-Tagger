@@ -1,4 +1,4 @@
-from spec_tagger.spec_review.result_triage import ProblemType
+from enum import Enum
 
 
 class Solution:
@@ -10,7 +10,7 @@ class Solution:
         git_commit_messages: list[str] | None,
         git_diff: str | None,
         test_coverage: dict | None,
-        problem_type: ProblemType | None,
+        problem_type: Enum | None,
         solution_statement: list[str],
         problem_statement: list[str],
         tag_coverage: dict | None = None,

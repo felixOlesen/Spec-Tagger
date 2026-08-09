@@ -1,4 +1,14 @@
-from spec_tagger.tag_test.spec_test_linker import Invalidities
+from enum import Enum
+
+
+class Invalidities(Enum):
+    TAG_REVISION_MISMATCH = (
+        "Revision number is outdated compared to other tags with the same identifier."
+    )
+    DUPLICATE_SPEC_TAG = "Duplicate tags found in the specification."
+    NO_SPEC_TAG_FOR_TEST_TAG = "Test tag has no corresponding valid spec tag."
+    NO_TEST_TAG_FOR_SPEC_TAG = "Spec tag has no corresponding valid test tag."
+    NO_FUNCTION_FOR_TEST_TAG = "No test function was found following the tag."
 
 
 class TagData:
