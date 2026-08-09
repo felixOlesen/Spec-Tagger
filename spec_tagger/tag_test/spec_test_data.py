@@ -40,6 +40,8 @@ class TagData:
 
         if tag_type == "feat" or tag_type == "story":
             closing_line = line + 10
+        elif tag_type == "step":
+            closing_line = line
 
         tag = {
             "filename": filename,
@@ -102,18 +104,21 @@ class TagData:
 
         return full_list
 
+    def update_item_closing_lines(self):
+        print("Warning, Closing Line function not overridden")
+
 
 class SpecTagData(TagData):
     def __init__(self) -> None:
         super().__init__()
 
-    def update_spec_item_closing_lines(self):
+    def update_item_closing_lines(self):
         if len(self.features) > 1:
             for i in range(len(self.features) - 1):
                 feature = self.features[i]
                 next_feature = self.features[i + 1]
                 if feature["filename"] == next_feature["filename"]:
-                    feature["closing_line"] = next_feature["line"]
+                    feature["closing_line"] = next_feature["line"] - 1
                 else:
                     feature["closing_line"] = -1
                 if i == len(self.features) - 2:
@@ -126,7 +131,7 @@ class SpecTagData(TagData):
                 story = self.stories[i]
                 next_story = self.stories[i + 1]
                 if story["filename"] == next_story["filename"]:
-                    story["closing_line"] = next_story["line"]
+                    story["closing_line"] = next_story["line"] - 1
                 else:
                     story["closing_line"] = -1
                 if i == len(self.stories) - 2:
@@ -161,3 +166,11 @@ class SpecTagData(TagData):
 class TestTagData(TagData):
     def __init__(self) -> None:
         super().__init__()
+
+    def update_item_closing_lines(self):
+        for _, tags in self.file_to_tag.items():
+            for index, tag in enumerate(tags):
+                if index == (len(tags) - 1):
+                    tag["closing_line"] = -1
+                else:
+                    tag["closing_line"] = tags[index + 1]["line"] - 1

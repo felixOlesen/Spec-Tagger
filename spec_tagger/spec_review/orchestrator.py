@@ -24,9 +24,8 @@ def run(args):
     # Aggregate Context
     aggregator = ContextAggregator(args.report_input)
     collected_context = aggregator.get_all_context()
-    print(collected_context["git_context"])
     # Classify Problem
-    triage = ResultTriage()
+    triage = ResultTriage(collected_context)
 
     # Construct Prompt OR NO-AI Method
     prompt_constructor = PromptConstructor()
