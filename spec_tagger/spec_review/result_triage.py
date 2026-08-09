@@ -12,7 +12,7 @@ class ResultTriage:
         self.test_coverage = context_data["report"]["coverage_data"]["test_coverage"]
         self.test_failures = context_data["report"]["test_results"]
 
-        self._print_keys(self.git_context, "Git Context")
+        self._print_keys(self.git_context, "Git Context", True)
         self._print_keys(self.invalid_tags, "Invalid Tags")
         self._print_keys(
             self.uncovered_tests_and_files, "Un-Covered Tests and Files", True
@@ -29,25 +29,47 @@ class ResultTriage:
                 if value_also:
                     print(f"\n{value}")
 
-    # Extract Invalid Tags
-    def _extract_invalid_tags(self):
+    def filter_results(self):
+        # Invalid Tags
+        self._triage_invalid_tags()
+        # Missed Tests and Files
+        self._triage_missed_tests_and_files()
+        # Failed Tests
+        self._triage_failed_tests()
+        # Passed Tests
+        self._triage_passed_but_changed_tests()
+
+    def _triage_invalid_tags(self):
         pass
 
-    # Extract Test Failures
-    def _extract_test_failures(self):
+    def _triage_missed_tests_and_files(self):
         pass
 
-    # Un-covered tests and test files
-    def _extract_uncovered_tests_and_files(self):
+    def _triage_failed_tests(self):
         pass
+
+    def _triage_passed_but_changed_tests(self):
+        pass
+
+    # Invalid Tag Handling
+    # - All that's needed is the tag data and the item
+
+    # Missing File / Test Handling
+    # - All that's needed is the file names and test function names
+
+    # Test Error/Failure Handling
+    # - Get the output of the test
+    # - Get the content of the test data
+    # - Get the content of the spec item
+    # - Get the diff of the related file
 
     # Change Analysis:
     #
     #
     #
     # Compare Changed files to their respective passing tests.
-    #   - Figure this out from line numbers
-    #
+    # if a test has passed, BUT any of the respecitve files in the spec or test files have changed
+    #   - Push it through to an AI check
     #
     #
     # Has a spec file changed?

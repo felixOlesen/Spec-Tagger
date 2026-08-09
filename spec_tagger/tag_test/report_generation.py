@@ -214,7 +214,7 @@ class Generator:
             for root, _, files in os.walk(self.test_coverage_location):
                 for file in files:
                     if file.endswith(".json"):
-                        file_components = file.split("_cov")
+                        file_components = file.split("_cov.json")
                         full_tag = file_components[0]
                         print(f"json report found: {file}")
 

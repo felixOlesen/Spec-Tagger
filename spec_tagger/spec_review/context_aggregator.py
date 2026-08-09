@@ -19,8 +19,6 @@ class ContextAggregator:
                 f"Warning, context_aggregator found report_path '{path}' to not be a valid file"
             )
 
-    # I also want to collect git context data
-
     def _collect_git_context(self):
         self.git_context_data = git_context.collect_context()
 
