@@ -1,3 +1,6 @@
+from spec_tagger.tag_test.spec_test_linker import Invalidities
+
+
 class TagData:
     def __init__(self) -> None:
         self.files = set()
@@ -36,7 +39,7 @@ class TagData:
 
         if len(self.tag_revisions[tag_partial]) > 1:
             tag_validity = False
-            reason = ["Multiple revision numbers found for this tag."]
+            reason = [Invalidities.TAG_REVISION_MISMATCH]
 
         if tag_type == "feat" or tag_type == "story":
             closing_line = line + 10
@@ -154,12 +157,12 @@ class SpecTagData(TagData):
                         if tag["tag_partial"] == target_tag:
                             tag["validity"]["valid"] = False
                             tag["validity"]["reasons"].append(
-                                "Duplicate tags found in the specification."
+                                Invalidities.DUPLICATE_SPEC_TAG
                             )
                     else:
                         tag["validity"]["valid"] = False
                         tag["validity"]["reasons"].append(
-                            "Duplicate tags found in the specification."
+                            Invalidities.DUPLICATE_SPEC_TAG
                         )
 
 

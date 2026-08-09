@@ -1,4 +1,15 @@
 from spec_tagger.tag_test.spec_test_data import SpecTagData, TagData, TestTagData
+from enum import Enum
+
+
+class Invalidities(Enum):
+    TAG_REVISION_MISMATCH = (
+        "Revision number is outdated compared to other tags with the same identifier."
+    )
+    DUPLICATE_SPEC_TAG = "Duplicate tags found in the specification."
+    NO_SPEC_TAG_FOR_TEST_TAG = "Test tag has no corresponding valid spec tag."
+    NO_TEST_TAG_FOR_SPEC_TAG = "Spec tag has no corresponding valid test tag."
+    NO_FUNCTION_FOR_TEST_TAG = "No test function was found following the tag."
 
 
 class Linker:
@@ -99,11 +110,11 @@ class Linker:
             if test_tag["validity"]["valid"] and "ignore" not in test_tag:
                 if test_tag["tag_partial"] not in self.linked_tags:
                     self.register_invalid_tag(
-                        test_tag, "Test tag has no corresponding valid spec tag."
+                        test_tag, Invalidities.NO_SPEC_TAG_FOR_TEST_TAG
                     )
                 elif test_tag["test_function"] is None:
                     self.register_invalid_tag(
-                        test_tag, "No test function was found following the tag."
+                        test_tag, Invalidities.NO_FUNCTION_FOR_TEST_TAG
                     )
                 else:
                     self.linked_tags[test_tag["type"] + "~" + test_tag["name"]][
@@ -120,7 +131,7 @@ class Linker:
             test_tags = value["test_tags"]
             if not test_tags:
                 self.register_invalid_tag(
-                    spec_tag, "Spec tag has no corresponding valid test tag."
+                    spec_tag, Invalidities.NO_TEST_TAG_FOR_SPEC_TAG
                 )
                 self.linked_tags[key]["test_tags"] = None
 
@@ -161,10 +172,7 @@ class Linker:
             if len(revisions) > 1 and "ignore" not in tag:
                 highest_revision = max(revisions)
                 if tag["revision"] != highest_revision:
-                    self.register_invalid_tag(
-                        tag,
-                        "Revision number is outdated compared to other tags with the same identifier.",
-                    )
+                    self.register_invalid_tag(tag, Invalidities.TAG_REVISION_MISMATCH)
 
     def register_invalid_tag(self, tag, reason):
         tag["validity"]["valid"] = False

@@ -63,3 +63,9 @@ def collect_context(base: str | None = None, head: str | None = None):
 def diff_for_file(path: str, base: str, head: str) -> str:
     """Diff for a specific file, saves sending an entire diff for smaller errors."""
     return _git("diff", f"{base}...{head}", "--", path)
+
+
+def commits_for_file(path: str, base: str, head: str) -> list[str]:
+    """Commit messages that touched `path` in the given range."""
+    out = _git("log", f"{base}...{head}", "--format=%s%n%n%b%x00", "--", path)
+    return [m.strip() for m in out.split("\x00") if m.strip()]
