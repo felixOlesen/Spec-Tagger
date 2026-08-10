@@ -5,6 +5,7 @@ from spec_tagger.ai.anthropic_controller import AnthropicController
 from spec_tagger.ai.prompt_construction import PromptConstructor
 from spec_tagger.spec_review.context_aggregator import ContextAggregator
 from spec_tagger.spec_review.result_triage import ResultTriage
+from spec_tagger.ai.litellm_controller import LiteLLMController
 
 
 def validate_args(args):
@@ -16,11 +17,6 @@ def validate_args(args):
 
 def run(args):
     validate_args(args)
-    # Setup
-    load_dotenv()
-    if not args.no_ai:
-        ai_controller = AnthropicController(os.environ.get("ANTTHROPIC_API_KEY"))
-
     # Aggregate Context
     aggregator = ContextAggregator(args.report_input)
     collected_context = aggregator.get_all_context()
@@ -31,6 +27,7 @@ def run(args):
         solution.display_data()
     # Construct Prompt OR NO-AI Method
     if not args.no_ai:
+        ai_controller = LiteLLMController("gemini", "gemini-3.5-flash")
         prompt_constructor = PromptConstructor(solutions)
 
     # Prepare output suggestion
