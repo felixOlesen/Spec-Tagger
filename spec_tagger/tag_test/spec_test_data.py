@@ -182,8 +182,16 @@ class TestTagData(TagData):
 
     def update_item_closing_lines(self):
         for _, tags in self.file_to_tag.items():
+            same_line_stack = []
             for index, tag in enumerate(tags):
                 if index == (len(tags) - 1):
                     tag["closing_line"] = -1
                 else:
-                    tag["closing_line"] = tags[index + 1]["line"] - 1
+                    next_tag = tags[index + 1]
+                    if next_tag["line"] == tag["line"]:
+                        same_line_stack.append(tag)
+                    else:
+                        same_line_stack.append(tag)
+                        while len(same_line_stack) > 0:
+                            same_line_tag = same_line_stack.pop()
+                            same_line_tag["closing_line"] = next_tag["line"] - 1

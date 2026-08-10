@@ -1,3 +1,4 @@
+from sys import stdout
 from spec_tagger.spec_review import git_context
 from spec_tagger.tag_test.spec_test_data import Invalidities
 from enum import Enum
@@ -5,12 +6,12 @@ from spec_tagger.spec_review.solution import Solution
 
 
 class ProblemType(Enum):
-    INVALID_TAG = ""
-    TEST_FAILURE = ""
-    TEST_ERROR = ""
-    MISSED_FILE = ""
-    MISSED_TEST = ""
-    PASSED_BUT_CHANGED = ""
+    INVALID_TAG = "Invalid Tag has been found"
+    TEST_FAILURE = "This test has failed"
+    TEST_ERROR = "This test has error-ed out"
+    MISSED_FILE = "The file has been missed"
+    MISSED_TEST = "The test has been missed"
+    PASSED_BUT_CHANGED = "The test has passed but the file has changed"
 
 
 class SolutionMessages(Enum):
@@ -32,6 +33,9 @@ class ResultTriage:
     def __init__(self, context_data: dict, ai_enabled: bool = False) -> None:
         self.context_data = context_data
         self.ai_enabled = ai_enabled
+        context_data["git_context"]["changed_files"] = set(
+            context_data["git_context"]["changed_files"]
+        )
         self.git_context = context_data["git_context"]
         self.invalid_tags = context_data["report"]["invalid_tags"]
         self.uncovered_tests_and_files = context_data["report"]["coverage_data"][
@@ -40,14 +44,23 @@ class ResultTriage:
         self.test_coverage = context_data["report"]["coverage_data"]["test_coverage"]
         self.test_failures = []
         self.test_passes = []
+        print(context_data["report"])
+        for tag, info in context_data["report"]["test_results"].items():
+            print("------------------------------------")
+            print(tag)
+            print(info)
+            print("------------------------------------")
+            failure_presence = False
+            for result in info["results"]:
+                if result["outcome"] == "failed":
+                    failure_presence = True
+                    break
+            if failure_presence:
+                self.test_failures.append({"tag": tag, "result": info})
+            else:
+                self.test_passes.append({"tag": tag, "result": info})
 
-        for tag, result in context_data.items():
-            if result["outcome"] == "passed":
-                self.test_passes.append({"tag": tag, "result": result})
-            elif result["outcome"] == "failed":
-                self.test_failures.append({"tag": tag, "result": result})
-
-        self._print_keys(self.git_context, "Git Context", True)
+        # self._print_keys(self.git_context, "Git Context", True)
         self._print_keys(self.invalid_tags, "Invalid Tags")
         self._print_keys(
             self.uncovered_tests_and_files, "Un-Covered Tests and Files", True
@@ -74,6 +87,7 @@ class ResultTriage:
         self._triage_failed_tests()
         # Passed Tests
         self._triage_passed_but_changed_tests()
+        return self.solutions
 
     def _triage_invalid_tags(self):
         if self.invalid_tags:
@@ -148,16 +162,16 @@ class ResultTriage:
                 )
                 self.solutions.append(solution)
         if self.uncovered_tests_and_files["tests"]:
-            for test in self.uncovered_tests_and_files["tests"]:
+            for test, info in self.uncovered_tests_and_files["tests"].items():
                 solution = Solution(
                     related_tag=None,
-                    location=f"{test['file']}:{test['line']}",
-                    item=None,
+                    location=f"{info['file']}:{info['line']}",
+                    item=test,
                     git_commit_messages=git_context.commits_for_file(
-                        test["file"], self.git_context["base"], self.git_context["head"]
+                        info["file"], self.git_context["base"], self.git_context["head"]
                     ),
                     git_diff=git_context.diff_for_file(
-                        test["file"], self.git_context["base"], self.git_context["head"]
+                        info["file"], self.git_context["base"], self.git_context["head"]
                     ),
                     test_coverage=None,
                     problem_type=ProblemType.MISSED_TEST,
@@ -169,34 +183,131 @@ class ResultTriage:
                 self.solutions.append(solution)
 
     def _triage_failed_tests(self):
-        # if self.test_failures:
-        #     for test_fail in self.test_failures:
-        #         if test_fail["result"]["stderr"]:
-        #             solution = Solution(
-        #                 related_tag=None,
-        #                 location=f"{test['file']}:{test['line']}",
-        #                 item=None,
-        #                 git_commit_messages=git_context.commits_for_file(
-        #                     test["file"], self.git_context["base"], self.git_context["head"]
-        #                 ),
-        #                 git_diff=git_context.diff_for_file(
-        #                     test["file"], self.git_context["base"], self.git_context["head"]
-        #                 ),
-        #                 test_coverage=None,
-        #                 problem_type=ProblemType.TEST_ERROR,
-        #                 problem_statement=[ProblemType.TEST_ERROR.value],
-        #                 solution_statement=[SolutionMessages.ERROR_TEST.value],
-        #                 ai_enabled=self.ai_enabled,
-        #                 ai_usage_recommended=True,
-        #             )
-        #             self.solutions.append(solution)
-        #         else:
-        pass
+        if self.test_failures:
+            for test_fail in self.test_failures:
+                (
+                    result_diff_string,
+                    result_commit_messages,
+                    related_files,
+                    item_content,
+                ) = self._collect_test_data_from_spec_and_test_tags(test_fail)
+                test_coverage = None
+                if test_fail["tag"] in self.test_coverage:
+                    test_coverage = self.test_coverage[test_fail["tag"]]
+                if test_fail["result"]["error"]:
+                    solution = Solution(
+                        related_tag=test_fail["tag"],
+                        location=related_files,
+                        item=item_content,
+                        git_commit_messages=result_commit_messages,
+                        git_diff=result_diff_string,
+                        test_coverage=test_coverage,
+                        problem_type=ProblemType.TEST_ERROR,
+                        problem_statement=[ProblemType.TEST_ERROR.value],
+                        solution_statement=[SolutionMessages.ERROR_TEST.value],
+                        ai_enabled=self.ai_enabled,
+                        ai_usage_recommended=True,
+                        stdout=test_fail["result"]["error"],
+                    )
+                    self.solutions.append(solution)
+                else:
+                    solution = Solution(
+                        related_tag=test_fail["tag"],
+                        location=related_files,
+                        item=item_content,
+                        git_commit_messages=result_commit_messages,
+                        git_diff=result_diff_string,
+                        test_coverage=test_coverage,
+                        problem_type=ProblemType.TEST_FAILURE,
+                        problem_statement=[ProblemType.TEST_FAILURE.value],
+                        solution_statement=[SolutionMessages.FAILED_TEST.value],
+                        ai_enabled=self.ai_enabled,
+                        ai_usage_recommended=True,
+                        stdout=test_fail["result"]["output"],
+                    )
+                    self.solutions.append(solution)
 
     def _triage_passed_but_changed_tests(self):
         for test_pass in self.test_passes:
-            continue
-        pass
+            check_results = self._passed_test_check(test_pass["result"])
+            if check_results:
+                (
+                    result_diff_string,
+                    result_commit_messages,
+                    related_files,
+                    item_content,
+                ) = check_results
+                test_coverage = None
+                if test_pass["tag"] in self.test_coverage:
+                    test_coverage = self.test_coverage[test_pass["tag"]]
+
+                solution = Solution(
+                    related_tag=test_pass["tag"],
+                    location=related_files,
+                    item=item_content,
+                    git_commit_messages=result_commit_messages,
+                    git_diff=result_diff_string,
+                    test_coverage=test_coverage,
+                    problem_type=ProblemType.PASSED_BUT_CHANGED,
+                    problem_statement=[ProblemType.PASSED_BUT_CHANGED.value],
+                    solution_statement=[SolutionMessages.PASSED_BUT_CHANGED.value],
+                    ai_enabled=self.ai_enabled,
+                    ai_usage_recommended=True,
+                    stdout=None,
+                )
+                self.solutions.append(solution)
+
+    def _passed_test_check(self, test_result) -> tuple[str, list[str], str, str] | None:
+        # Get the related files for the tests and spec, if any of them show up in the changed files
+        print("-------------------------------")
+        print(test_result)
+        print("-------------------------------")
+        file_to_tag = {test_result["spec_tag"]["filename"]: test_result["spec_tag"]}
+        for test_tag in test_result["test_tags"]:
+            file_to_tag[test_tag["filename"]] = test_tag
+        files = set(file_to_tag.keys())
+        relevant_files = files.intersection(self.git_context["changed_files"])
+        if len(relevant_files) > 0:
+            spec_content = test_result["spec_tag"]["content"]
+            diff_string = "Diffs for Connected Files:\n"
+            commit_messages = []
+            item_contents = f"Spec Item Content: {spec_content}\n"
+            file_locations = "File Locations:\n"
+            for file in relevant_files:
+                tag = file_to_tag[file]
+                tag_line = tag["line"]
+                commit_messages.append(
+                    f"File commit_messages: {tag['full_tag']}\n {git_context.commits_for_file(file, self.git_context['base'], self.git_context['head'])}\n"
+                )
+                diff_string += f"Related Diff to Tag: {tag['full_tag']}\n {git_context.diff_for_file(file, self.git_context['base'], self.git_context['head'])}\n"
+                item_contents += f"Tag Item Contents: {tag['content']}"
+                file_locations += f"{file}:{tag_line}\n"
+            return diff_string, commit_messages, file_locations, item_contents
+        else:
+            return None
+
+    def _collect_test_data_from_spec_and_test_tags(
+        self, test_result
+    ) -> tuple[str, list[str], str, str]:
+        spec_file = test_result["result"]["spec_tag"]["filename"]
+        spec_line = test_result["result"]["spec_tag"]["line"]
+        spec_content = test_result["result"]["spec_tag"]["content"]
+        diff_string = f"Spec File Diff:\n {git_context.diff_for_file(spec_file, self.git_context['base'], self.git_context['head'])}\n"
+        commit_messages = [
+            f"Spec File Commit Messages if any:\n {git_context.commits_for_file(spec_file, self.git_context['base'], self.git_context['head'])}\n"
+        ]
+        related_files = f"Spec File: {spec_file}:{spec_line} \nTest Files:\n"
+        item_contents = f"Spec Item Content: {spec_content}\n"
+        for test_tag in test_result["result"]["test_tags"]:
+            test_file = test_tag["filename"]
+            test_line = test_tag["line"]
+            diff_string += f"Test Function: {test_tag['test_function']}\n {git_context.diff_for_file(test_file, self.git_context['base'], self.git_context['head'])}\n"
+            commit_messages.append(
+                f"Test File commit_messages: {test_tag['test_function']}\n {git_context.commits_for_file(test_file, self.git_context['base'], self.git_context['head'])}\n"
+            )
+            related_files += f"{test_file}:{test_line}\n"
+            item_contents += f"Test Function: {test_tag['test_function']} Contents: \n {test_tag['content']}\n"
+        return diff_string, commit_messages, related_files, item_contents
 
     # Invalid Tag Handling
     # - All that's needed is the tag data and the item

@@ -26,9 +26,12 @@ def run(args):
     collected_context = aggregator.get_all_context()
     # Classify Problem
     triage = ResultTriage(collected_context)
-
+    solutions = triage.filter_results()
+    for solution in solutions:
+        solution.display_data()
     # Construct Prompt OR NO-AI Method
-    prompt_constructor = PromptConstructor()
+    if not args.no_ai:
+        prompt_constructor = PromptConstructor(solutions)
 
     # Prepare output suggestion
     # Feed into workflow for PR OR Print to STDOUT
