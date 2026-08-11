@@ -1,5 +1,6 @@
 import litellm
 from dotenv import load_dotenv
+import json
 
 
 class LiteLLMController:
@@ -10,12 +11,32 @@ class LiteLLMController:
         self.provider_route = self.get_provider_route(provider)
 
     def get_provider_route(self, provdier_name) -> str:
+        new_route = ""
         match provdier_name:
             case "gemini":
-                self.provider_route = f"gemini/{self.model_name}"
+                new_route = f"gemini/{self.model_name}"
+
+        return new_route
 
     def send_prompt(self):
         try:
+            response = litellm.completion(
+                model=self.provider_route,  # "anthropic/claude-sonnet-4-6", "gpt-4o", ...
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                tools=[
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "record",
+                            "parameters": schema.model_json_schema(),
+                        },
+                    }
+                ],
+                tool_choice={"type": "function", "function": {"name": "record"}},
+            )
             response = litellm.completion(
                 model=self.provider_route,
                 messages=[
@@ -25,6 +46,8 @@ class LiteLLMController:
                     }
                 ],
             )
+            args = json.loads(resp.choices[0].message.tool_calls[0].function.arguments)
+            return schema(**args)
             self.parse_response(response)
         except litellm.AuthenticationError as e:
             print(f"Bad API key: {e}")
