@@ -1,4 +1,3 @@
-from sys import stdout
 from spec_tagger.spec_review import git_context
 from spec_tagger.tag_test.spec_test_data import Invalidities
 from enum import Enum
@@ -12,6 +11,7 @@ class ProblemType(Enum):
     MISSED_FILE = "The file has been missed"
     MISSED_TEST = "The test has been missed"
     PASSED_BUT_CHANGED = "The test has passed but the file has changed"
+    IMPLEMENTATION_CHANGE_NOT_COVERED = "A change in the implementation code is present but it is either partially covered or not covered at all by the spec or tests, this requires review to understand how the spec and tests can stay consistent with the behaviour of the implementation code."
 
 
 class SolutionMessages(Enum):
@@ -26,11 +26,21 @@ class SolutionMessages(Enum):
     UNCOVERED_TEST = "Read through the test contents to see what part of the spec it might belong to, either apply a pre-existing tag to the test or write a new entry into the spec with a new tag which you can then apply to the test."
     FAILED_TEST = "Take a look at the test output of the failing test to make sure that the behaviour it tests is correct in accordance to the spec item, also take a look at recently changed portions of the implementation code to figure out if anything might be incorrect, or not implemented yet."
     ERROR_TEST = "The test has returned an error instead of being able to finish and provide a result, make sure to take a look at the error output and the test function block to be sure there are no errors in your test code, then look at the implementation code to see if any errors are apparent there as well."
-    PASSED_BUT_CHANGED = "Everything in terms of test-results appears to be running correctly, although it seems that teh files that are connected to the spec, test, or implementation code have changed substantially, make sure to check these diffs in the code and evaluate if behaviourally they are all consistent with eachother."
+    PASSED_BUT_CHANGED = "Everything in terms of test-results appears to be running correctly, although it seems that the files that are connected to the spec, test, or implementation code have changed substantially, make sure to check these diffs in the code and evaluate if behaviourally they are all consistent with eachother."
+    UNCOVERED_IMPLEMENTATION_CHANGE = "There is either partial or no coverage for these files at all, you need to read through and figure out how these changes need to be incorporated into the specification to allow for the the spec to stay up-to-date with the implementation code as well, also look into and express the types of linked tests that are required."
 
 
 class ResultTriage:
-    def __init__(self, context_data: dict, ai_enabled: bool = False) -> None:
+    def __init__(
+        self,
+        context_data: dict,
+        ai_enabled: bool = False,
+        semantic_drift_included: bool = True,
+        failure_diagnostic_included: bool = True,
+        tag_suggestion_included: bool = True,
+        invalid_tags_included: bool = True,
+        entire_diff_included: bool = False,
+    ):
         self.context_data = context_data
         self.ai_enabled = ai_enabled
         context_data["git_context"]["changed_files"] = set(
@@ -68,6 +78,11 @@ class ResultTriage:
         self._print_keys(self.test_coverage, "Test Coverage")
 
         self.solutions = []
+        self.semantic_drift_included = semantic_drift_included
+        self.failure_diagnostic_included = failure_diagnostic_included
+        self.tag_suggestion_included = tag_suggestion_included
+        self.invalid_tags_included = invalid_tags_included
+        self.entire_diff_included = entire_diff_included
 
     def _print_keys(self, data_dict: dict, name: str, value_also: bool = False):
 
@@ -80,14 +95,84 @@ class ResultTriage:
 
     def filter_results(self):
         # Invalid Tags
-        self._triage_invalid_tags()
+        if self.invalid_tags_included:
+            self._triage_invalid_tags()
         # Missed Tests and Files
-        self._triage_missed_tests_and_files()
+        if self.tag_suggestion_included:
+            self._triage_missed_tests_and_files()
         # Failed Tests
-        self._triage_failed_tests()
+        if self.failure_diagnostic_included:
+            self._triage_failed_tests()
         # Passed Tests
-        self._triage_passed_but_changed_tests()
+        if self.semantic_drift_included:
+            self._triage_passed_but_changed_tests()
+
+        self._triage_uncovered_implementation_changes()
+
         return self.solutions
+
+    def _triage_uncovered_implementation_changes(self):
+        if self.entire_diff_included:
+            solution = Solution(
+                related_tag=None,
+                location=None,
+                item=None,
+                git_commit_messages=self.git_context["commit_messages"],
+                git_diff=self.git_context["diff"],
+                test_coverage=self.test_coverage[invalid["full_tag"]],
+                problem_type=ProblemType.IMPLEMENTATION_CHANGE_NOT_COVERED,
+                problem_statement=[ProblemType.IMPLEMENTATION_CHANGE_NOT_COVERED.value],
+                solution_statement=[
+                    SolutionMessages.UNCOVERED_IMPLEMENTATION_CHANGE.value
+                ],
+                ai_enabled=self.ai_enabled,
+                ai_usage_recommended=True,
+            )
+            self.solutions.append(solution)
+        else:
+            uncovered_implementation_files = self._get_uncovered_implementation_files()
+            for file in uncovered_implementation_files:
+                solution = Solution(
+                    related_tag=None,
+                    location=f"{file}",
+                    item=None,
+                    git_commit_messages=git_context.commits_for_file(
+                        file,
+                        self.git_context["base"],
+                        self.git_context["head"],
+                    ),
+                    git_diff=git_context.diff_for_file(
+                        file,
+                        self.git_context["base"],
+                        self.git_context["head"],
+                    ),
+                    test_coverage=None,
+                    problem_type=ProblemType.IMPLEMENTATION_CHANGE_NOT_COVERED,
+                    problem_statement=[
+                        ProblemType.IMPLEMENTATION_CHANGE_NOT_COVERED.value
+                    ],
+                    solution_statement=[
+                        SolutionMessages.UNCOVERED_IMPLEMENTATION_CHANGE.value
+                    ],
+                    ai_enabled=self.ai_enabled,
+                    ai_usage_recommended=True,
+                )
+                self.solutions.append(solution)
+
+    def _get_uncovered_implementation_files(self):
+        uncovered_files = set()
+        covered_files = set()
+        for _, coverage_data in self.test_coverage.items():
+            for filename in coverage_data.keys():
+                if filename not in covered_files:
+                    covered_files.add(filename)
+        changed_files = self.context_data["git_context"]["changed_files"]
+
+        for changed_file in changed_files:
+            if changed_file not in covered_files:
+                uncovered_files.add(changed_file)
+
+        return list(uncovered_files)
 
     def _triage_invalid_tags(self):
         if self.invalid_tags:

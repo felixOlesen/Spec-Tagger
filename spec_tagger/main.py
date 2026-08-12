@@ -33,10 +33,49 @@ def main():
         help="Tells the program where the report.json is for analysing the test results from a spectagger run.",
         default="report",
     )
-
+    spec_review_parser.add_argument(
+        "--model_provider",
+        help="The provider route used in litellm to indicate a valid provider, for example 'gemini', 'nvidia_nim', 'openrouter', etc.",
+        default="gemini",
+    )
+    spec_review_parser.add_argument(
+        "--model_name",
+        help="The model name is the name of the specific model that is valid for the provider that you are using, for example: 'gemini-3.5-flash'.",
+        default="gemini-3.5-flash",
+    )
+    spec_review_parser.add_argument(
+        "--rate_limit",
+        help="This needs to be an integer describing the maximum responses per minute that are allowed for a specific endpoint, please refer to your API documentation for this.",
+        default=10,
+    )
     spec_review_parser.add_argument(
         "--no_ai",
         help="Runs the Spec-Reivew without AI tooling in case it's not available to the user.",
+        action="store_true",
+    )
+    spec_review_parser.add_argument(
+        "--include_semantic_drift_review",
+        help="Tells the tool, that you want to specifically include semantic drift checking for changed files located in git diffs and logs, if no specific review is requested, all will be run.",
+        action="store_true",
+    )
+    spec_review_parser.add_argument(
+        "--include_failure_diagnostic_review",
+        help="Tells the tool, that you want to specifically include reviews for improvements to either the spec, the tests or the implementation code in the case that any related tests fail, if no specific review is requested, all will be run.",
+        action="store_true",
+    )
+    spec_review_parser.add_argument(
+        "--include_tag_suggestion_review",
+        help="Tells the tool, that you want to specifically include new tag suggestions for un-tagged test files and test cases, if no specific review is requested, all will be run.",
+        action="store_true",
+    )
+    spec_review_parser.add_argument(
+        "--include_invalid_tag_review",
+        help="Tells the tool, that you want to specifically include the review of cases of invalid tags, if no specific review is requested, all will be run.",
+        action="store_true",
+    )
+    spec_review_parser.add_argument(
+        "--include_entire_diff_review",
+        help="Tells the tool, that you want to specifically include the entire diff in the 'un-covered implementation file checking' stage instead of just looking at changed files that haven't been covered at all by the current testing in place, WARNING: This could result in very large token usage if your git diff is large, please double check that the usage will be sufficient for your needs.",
         action="store_true",
     )
 
