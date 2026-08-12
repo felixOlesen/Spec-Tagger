@@ -20,10 +20,11 @@ class SystemPrompt(Enum):
 
 
 class Prompt:
-    def __init__(self, schema, system_prompt, context_evidence):
+    def __init__(self, schema, system_prompt, context_evidence, problem_type):
         self.schema = schema
         self.system_prompt = system_prompt
         self.context_evidence = context_evidence
+        self.problem_type = problem_type
 
 
 class PromptConstructor:
@@ -63,7 +64,12 @@ class PromptConstructor:
                     SystemPrompt.UNCOVERED_IMPLEMENTATION_CHANGE
                 )
                 prompt_evidence = self._build_contextual_evidence(solution=solution)
-                prompt = Prompt(UncoveredChange, system_prompt, prompt_evidence)
+                prompt = Prompt(
+                    UncoveredChange,
+                    system_prompt,
+                    prompt_evidence,
+                    solution.problem_type,
+                )
                 self.prompts.append(prompt)
 
         if self.semantic_drift_solutions:
@@ -72,7 +78,9 @@ class PromptConstructor:
                     continue
                 system_prompt = self._build_system_prompt(SystemPrompt.SEMANTIC_DRIFT)
                 prompt_evidence = self._build_contextual_evidence(solution=solution)
-                prompt = Prompt(SemanticDrift, system_prompt, prompt_evidence)
+                prompt = Prompt(
+                    SemanticDrift, system_prompt, prompt_evidence, solution.problem_type
+                )
                 self.prompts.append(prompt)
         if self.failure_diagnostic_solutions:
             for solution in self.failure_diagnostic_solutions:
@@ -82,7 +90,12 @@ class PromptConstructor:
                     SystemPrompt.FAILURE_DIAGNOSTIC
                 )
                 prompt_evidence = self._build_contextual_evidence(solution=solution)
-                prompt = Prompt(FailureDiagnostic, system_prompt, prompt_evidence)
+                prompt = Prompt(
+                    FailureDiagnostic,
+                    system_prompt,
+                    prompt_evidence,
+                    solution.problem_type,
+                )
                 self.prompts.append(prompt)
         if self.tag_suggestion_solutions:
             for solution in self.tag_suggestion_solutions:
@@ -90,7 +103,9 @@ class PromptConstructor:
                     continue
                 system_prompt = self._build_system_prompt(SystemPrompt.TAG_SUGGESTION)
                 prompt_evidence = self._build_contextual_evidence(solution=solution)
-                prompt = Prompt(TagSuggestion, system_prompt, prompt_evidence)
+                prompt = Prompt(
+                    TagSuggestion, system_prompt, prompt_evidence, solution.problem_type
+                )
                 self.prompts.append(prompt)
 
         return self.prompts
