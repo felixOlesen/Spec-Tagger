@@ -60,8 +60,14 @@ jobs:
                 ...context.repo, issue_number: context.issue.number, body,
               });
             }
-      - name: Gate
+      - name: Gate on test failures
         if: steps.spec_tagger_testing.outcome == 'failure'
-        run: exit 1
-        elif: steps.spec_tagger_review.outcome == 'failure'
-        run: exit 1
+        run: |
+          echo "::error::Spec-linked tests failed"
+          exit 1
+
+      - name: Gate on review failures
+        if: steps.spec_tagger_review.outcome == 'failure'
+        run: |
+          echo "::error::Spec review found blocking drift"
+          exit 1
