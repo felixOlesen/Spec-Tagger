@@ -62,5 +62,5 @@ jobs:
             }
       - name: Gate
         if: steps.spec_tagger_testing.outcome == 'failure'
-        if: steps.spec_tagger_review.outcome == 'failure'
+        elseif: steps.spec_tagger_review.outcome == 'failure'
         run: exit 1
