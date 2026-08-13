@@ -38,7 +38,7 @@ def collect_context(base: str | None = None, head: str | None = None):
             or "origin/main"
         )
     if not head:
-        base = pr.get("head", {}).get("sha") or os.environ.get("GITHUB_SHA") or "HEAD"
+        head = pr.get("head", {}).get("sha") or os.environ.get("GITHUB_SHA") or "HEAD"
 
     diff_range = f"{base}...{head}"
 
@@ -47,7 +47,9 @@ def collect_context(base: str | None = None, head: str | None = None):
         "head": head,
         "diff": _git("diff", diff_range),
         "changed_files": _git("diff", "--name-only", diff_range).splitlines(),
-        "commit_messages": _git("log", "--format=%s%n%n%b", diff_range).split("\x00"),
+        "commit_messages": _git("log", "--format=%s%n%n%b%x00", diff_range).split(
+            "\x00"
+        ),
         "pr_title": pr.get("title"),
         "pr_description": pr.get("body"),
         "pr_number": pr.get("number"),
@@ -61,3 +63,9 @@ def collect_context(base: str | None = None, head: str | None = None):
 def diff_for_file(path: str, base: str, head: str) -> str:
     """Diff for a specific file, saves sending an entire diff for smaller errors."""
     return _git("diff", f"{base}...{head}", "--", path)
+
+
+def commits_for_file(path: str, base: str, head: str) -> list[str]:
+    """Commit messages that touched `path` in the given range."""
+    out = _git("log", f"{base}...{head}", "--format=%s%n%n%b%x00", "--", path)
+    return [m.strip() for m in out.split("\x00") if m.strip()]

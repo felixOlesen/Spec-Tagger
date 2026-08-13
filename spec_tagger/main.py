@@ -1,6 +1,6 @@
 import argparse
 from spec_tagger.tag_test import orchestrator as tag_test_orchestrator
-from spec_tagger.ci import orchestrator as ci_orchestrator
+from spec_tagger.spec_review import orchestrator as review_orchestrator
 import spec_tagger.agent_skill.skill_installer as skill_installer
 
 
@@ -8,7 +8,7 @@ def main():
     parser = argparse.ArgumentParser()
     sub_parsers = parser.add_subparsers(dest="command")
     skill_parser = sub_parsers.add_parser("install-skill")
-    ci_parser = sub_parsers.add_parser("ci")
+    spec_review_parser = sub_parsers.add_parser("spec-review")
 
     # SKILL INSTALL ARGS
     skill_parser.add_argument(
@@ -27,16 +27,55 @@ def main():
         action="store_true",
     )
 
-    # CI ARGS
-    ci_parser.add_argument(
+    # SPEC REVIEW ARGS
+    spec_review_parser.add_argument(
         "--report_input",
         help="Tells the program where the report.json is for analysing the test results from a spectagger run.",
         default="report",
     )
-
-    ci_parser.add_argument(
+    spec_review_parser.add_argument(
+        "--model_provider",
+        help="The provider route used in litellm to indicate a valid provider, for example 'gemini', 'nvidia_nim', 'openrouter', etc.",
+        default="gemini",
+    )
+    spec_review_parser.add_argument(
+        "--model_name",
+        help="The model name is the name of the specific model that is valid for the provider that you are using, for example: 'gemini-3.5-flash'.",
+        default="gemini-3.5-flash",
+    )
+    spec_review_parser.add_argument(
+        "--rate_limit",
+        help="This needs to be an integer describing the maximum responses per minute that are allowed for a specific endpoint, please refer to your API documentation for this.",
+        default=10,
+    )
+    spec_review_parser.add_argument(
         "--no_ai",
-        help="Runs the CI without AI tooling in case it's not available to the user.",
+        help="Runs the Spec-Reivew without AI tooling in case it's not available to the user.",
+        action="store_true",
+    )
+    spec_review_parser.add_argument(
+        "--include_semantic_drift_review",
+        help="Tells the tool, that you want to specifically include semantic drift checking for changed files located in git diffs and logs, if no specific review is requested, all will be run.",
+        action="store_true",
+    )
+    spec_review_parser.add_argument(
+        "--include_failure_diagnostic_review",
+        help="Tells the tool, that you want to specifically include reviews for improvements to either the spec, the tests or the implementation code in the case that any related tests fail, if no specific review is requested, all will be run.",
+        action="store_true",
+    )
+    spec_review_parser.add_argument(
+        "--include_tag_suggestion_review",
+        help="Tells the tool, that you want to specifically include new tag suggestions for un-tagged test files and test cases, if no specific review is requested, all will be run.",
+        action="store_true",
+    )
+    spec_review_parser.add_argument(
+        "--include_invalid_tag_review",
+        help="Tells the tool, that you want to specifically include the review of cases of invalid tags, if no specific review is requested, all will be run.",
+        action="store_true",
+    )
+    spec_review_parser.add_argument(
+        "--include_entire_diff_review",
+        help="Tells the tool, that you want to specifically include the entire diff in the 'un-covered implementation file checking' stage instead of just looking at changed files that haven't been covered at all by the current testing in place, WARNING: This could result in very large token usage if your git diff is large, please double check that the usage will be sufficient for your needs.",
         action="store_true",
     )
 
@@ -138,9 +177,9 @@ def main():
                 args.destination, args.force, args.install_dry_run
             )
             return
-        case "ci":
-            print("CI command invoked")
-            return ci_orchestrator.run(args=args)
+        case "spec-review":
+            print("Spec-Reivew command invoked")
+            return review_orchestrator.run(args=args)
         case _:
             print("No command, running core tool...")
             return tag_test_orchestrator.run(args)

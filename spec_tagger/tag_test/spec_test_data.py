@@ -1,3 +1,16 @@
+from enum import Enum
+
+
+class Invalidities(Enum):
+    TAG_REVISION_MISMATCH = (
+        "Revision number is outdated compared to other tags with the same identifier."
+    )
+    DUPLICATE_SPEC_TAG = "Duplicate tags found in the specification."
+    NO_SPEC_TAG_FOR_TEST_TAG = "Test tag has no corresponding valid spec tag."
+    NO_TEST_TAG_FOR_SPEC_TAG = "Spec tag has no corresponding valid test tag."
+    NO_FUNCTION_FOR_TEST_TAG = "No test function was found following the tag."
+
+
 class TagData:
     def __init__(self) -> None:
         self.files = set()
@@ -36,10 +49,12 @@ class TagData:
 
         if len(self.tag_revisions[tag_partial]) > 1:
             tag_validity = False
-            reason = ["Multiple revision numbers found for this tag."]
+            reason = [Invalidities.TAG_REVISION_MISMATCH]
 
         if tag_type == "feat" or tag_type == "story":
             closing_line = line + 10
+        elif tag_type == "step":
+            closing_line = line
 
         tag = {
             "filename": filename,
@@ -102,18 +117,21 @@ class TagData:
 
         return full_list
 
+    def update_item_closing_lines(self):
+        print("Warning, Closing Line function not overridden")
+
 
 class SpecTagData(TagData):
     def __init__(self) -> None:
         super().__init__()
 
-    def update_spec_item_closing_lines(self):
+    def update_item_closing_lines(self):
         if len(self.features) > 1:
             for i in range(len(self.features) - 1):
                 feature = self.features[i]
                 next_feature = self.features[i + 1]
                 if feature["filename"] == next_feature["filename"]:
-                    feature["closing_line"] = next_feature["line"]
+                    feature["closing_line"] = next_feature["line"] - 1
                 else:
                     feature["closing_line"] = -1
                 if i == len(self.features) - 2:
@@ -126,7 +144,7 @@ class SpecTagData(TagData):
                 story = self.stories[i]
                 next_story = self.stories[i + 1]
                 if story["filename"] == next_story["filename"]:
-                    story["closing_line"] = next_story["line"]
+                    story["closing_line"] = next_story["line"] - 1
                 else:
                     story["closing_line"] = -1
                 if i == len(self.stories) - 2:
@@ -149,15 +167,31 @@ class SpecTagData(TagData):
                         if tag["tag_partial"] == target_tag:
                             tag["validity"]["valid"] = False
                             tag["validity"]["reasons"].append(
-                                "Duplicate tags found in the specification."
+                                Invalidities.DUPLICATE_SPEC_TAG
                             )
                     else:
                         tag["validity"]["valid"] = False
                         tag["validity"]["reasons"].append(
-                            "Duplicate tags found in the specification."
+                            Invalidities.DUPLICATE_SPEC_TAG
                         )
 
 
 class TestTagData(TagData):
     def __init__(self) -> None:
         super().__init__()
+
+    def update_item_closing_lines(self):
+        for _, tags in self.file_to_tag.items():
+            same_line_stack = []
+            for index, tag in enumerate(tags):
+                if index == (len(tags) - 1):
+                    tag["closing_line"] = -1
+                else:
+                    next_tag = tags[index + 1]
+                    if next_tag["line"] == tag["line"]:
+                        same_line_stack.append(tag)
+                    else:
+                        same_line_stack.append(tag)
+                        while len(same_line_stack) > 0:
+                            same_line_tag = same_line_stack.pop()
+                            same_line_tag["closing_line"] = next_tag["line"] - 1

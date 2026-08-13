@@ -73,6 +73,27 @@ class Crawler:
             for tagless_file in self.tagless_files:
                 print(f"No tags were found in {tagless_file}")
 
+    def _extract_item_snapshots(self):
+        print(
+            "---------------------------------------------------- Item Snapshots ----------------------------------------------------"
+        )
+        # loop through tag data
+        # Extract line and closing_line
+        # look at file, get lines from file, retrieve slice
+        # Account for when the closing lines are past the end of the file
+        # or past the beginning of the next tag in the file
+        self.tag_data.update_item_closing_lines()
+        for file, tags in self.tag_data.file_to_tag.items():
+            for tag in tags:
+                item_start_line = tag["item_start_line"]
+                closing_line = tag["closing_line"]
+                with open(file, "r", encoding="utf-8-sig") as f:
+                    lines = f.readlines()
+                if closing_line > (len(lines) - 1):
+                    closing_line = -1
+                item_slice = lines[(item_start_line - 1) : (closing_line)]
+                tag["content"] = item_slice
+
 
 class TestCrawler(Crawler):
     def __init__(
@@ -123,6 +144,8 @@ class TestCrawler(Crawler):
         if self.framework:
             self.extract_and_assign_test_declarations()
             self._crawl_for_uncovered_tests()
+
+        self._extract_item_snapshots()
 
         return self.tag_data
 
@@ -317,6 +340,8 @@ class SpecCrawler(Crawler):
             return
 
         self.extract_tags()
+
+        self._extract_item_snapshots()
 
         return self.tag_data
 

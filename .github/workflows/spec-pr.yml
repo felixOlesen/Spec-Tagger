@@ -23,9 +23,51 @@ jobs:
       
       - name: Run SpecTagger
         id: spec_tagger_testing
-        run: spectagger --target_spec features --test_dir tests --test_command "pytest {tests}" --report --report_type stdout
+        run: |
+          mkdir coverage_reports
+          mkdir report
+          spectagger --target_spec features --test_dir tests --test_command "coverage run --append -m pytest {tests}" --report --report_type json --coverage_report_path coverage_reports --coverage_library "python.coverage" --verbose
         continue-on-error: true
+      - name: SpecTagger Results Review
+        id: spec_tagger_review
+        env:
+          NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
+        run: spectagger spec-review --report_input report/report.json --model_provider nvidia_nim --model_name nvidia/nemotron-3.5-lightning-30b-a3b
+        continue-on-error: true
+      - uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const fs = require('fs');
+            if (!fs.existsSync('spectagger_findings.md')) return;
+            const body = fs.readFileSync('spectagger_findings.md', 'utf8');
+            const marker = '## Spec review';          // matches your render() heading
 
-      - name: Gate
+            const {data: comments} = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(
+              c => c.user.type === 'Bot' && c.body.startsWith(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                ...context.repo, comment_id: existing.id, body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo, issue_number: context.issue.number, body,
+              });
+            }
+      - name: Gate on test failures
         if: steps.spec_tagger_testing.outcome == 'failure'
-        run: exit 1
+        run: |
+          echo "::error::Spec-linked tests failed"
+          exit 1
+
+      - name: Gate on review failures
+        if: steps.spec_tagger_review.outcome == 'failure'
+        run: |
+          echo "::error::Spec review found blocking drift"
+          exit 1

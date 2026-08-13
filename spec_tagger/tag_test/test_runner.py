@@ -80,7 +80,9 @@ class Runner:
                 targets = self.build_targets_for_link(link)
             else:
                 targets = None
+
             tag_str = link["spec_tag"]["full_tag"]
+
             if not targets:
                 spec = link["spec_tag"]
                 if self.verbose:
