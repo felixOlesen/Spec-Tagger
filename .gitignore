@@ -231,6 +231,5 @@ report/
 report/*
 coverage_reports/
 coverage_reports/*
-coverage_reports_2/
-coverage_reports_2/*
+spectagger_findings.md
 .env
