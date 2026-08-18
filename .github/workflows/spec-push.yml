@@ -15,5 +15,5 @@ jobs:
       - run: pip install "git+https://github.com/felixOlesen/Spec-Tagger@v0.0.1"
       - run: pip install -r requirements.txt
       - name: Test Against Tags
-        run: spectagger --target_spec features --test_dir tests --test_command "pytest {tests}"
+        run: spectagger --target_spec features --test_dir tests --test_command "pytest {tests}" --verbose
 
