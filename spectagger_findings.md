@@ -1,13 +1,13 @@
 ## Spec review
 
-### Uncovered behavioural changes (2)
+### Uncovered behavioural changes (3)
 
 **An unrecognized report_type generates no report file and prints an invalid report type message.** · confidence 95
 `features/report_generation.feature` — spec only
 
 Suggested spec item:
 
-> If report_type is not one of the recognized types (json, html, stdout), the generation is aborted, an invalid type message is printed, and no report file is written to disk.
+> > If report_type is not one of the recognized types (json, html, stdout), the generation is aborted, an invalid type message is printed, and no report file is written to disk.
 
 <details><summary>Evidence</summary>
 
@@ -20,25 +20,8 @@ And no report file is written
 
 </details>
 
-**report generation API returns a formatted report string when given valid input data, and raises an error for invalid input** · confidence 70
-`app/report_generator.py` — uncovered
+**Report construction is skipped when successful_links is empty, printing a warning and omitting test results, coverage data, and invalid tags from the report object.** · confidence 95
+`features/report_generation.feature` — spec only
 
-Suggested spec item:
-
-> - Given valid sales data, when report generation is invoked, then a formatted report string is returned.- Given invalid or missing input, when report generation is invoked, then an appropriate error is raised.
-
-<details><summary>Evidence</summary>
-
-```
-Commit message: 'feature/added spec and tests for the report generation feature'
-Diff of spectagger_findings.md indicates spec review but no behavioural details
-```
-
-</details>
-
-<details>
-<summary>Other findings (1)</summary>
-
-- **The gitignore file is updated to stop ignoring the coverage_reports_2/ directory and to start ignoring spectagger_findings.md and .env files.** — cosmetic, uncovered, confidence 80
-
-</details>
+**The `spec-review` sub-command invokes `create_prompt()` which returns `Please tag the specification with new information` to prompt the user for tagging the specification.** · confidence 95
+`spec_tagger/spec_review/system_prompt_creation.py` — uncovered
