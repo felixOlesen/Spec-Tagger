@@ -33,7 +33,7 @@ jobs:
           mkdir -p report
           mkdir -p coverage_reports
           spectagger --target_spec features --test_dir tests \
-                     --test_command "pytest {tests}" \
+                     --test_command "coverage run --append -m pytest {tests}" \
                      --one_by_one --verbose \
                      --report --report_type html --report_output report --coverage_library "python.coverage" --coverage_report_path coverage_reports
         continue-on-error: true
