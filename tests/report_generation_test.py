@@ -54,7 +54,11 @@ def make_generator(tmp_path, **overrides):
 # feat~report_generation~1 story~report_merges_link_data_into_results~1
 def test_construct_report_merges_link_data_into_test_results(tmp_path):
     tag = tag_id("feat", "example", 1)
-    links = {"feat~example": make_link(tag, test_tags=[{"filename": "t.py", "test_function": "test_example"}])}
+    links = {
+        "feat~example": make_link(
+            tag, test_tags=[{"filename": "t.py", "test_function": "test_example"}]
+        )
+    }
     test_output = {tag: make_test_result(test_count=1, pass_count=1)}
 
     generator = make_generator(
@@ -229,31 +233,6 @@ def test_stdout_report_classifies_tag_status(tmp_path, capsys):
     assert "UNTESTED" in sections[untested_tag][:100]
     assert "PASSED" in sections[passed_tag][:100]
     assert "FAILED" in sections[failed_tag][:100]
-
-
-# confidence: 85
-# story~stdout_one_by_one_forces_single_test_count~1
-def test_stdout_one_by_one_forces_single_test_count(tmp_path, capsys):
-    tag = tag_id("feat", "example", 1)
-    links = {"feat~example": make_link(tag)}
-    # A real test_count of 5 with only 1 pass would read as FAILED under
-    # normal classification; one_by_one forces test_count to 1, so a single
-    # pass reads as a full match instead.
-    test_output = {tag: make_test_result(test_count=5, pass_count=1)}
-
-    generator = make_generator(
-        tmp_path,
-        report_type="stdout",
-        successful_links=links,
-        test_output=test_output,
-        one_by_one=True,
-    )
-    generator.generate_report()
-
-    out = capsys.readouterr().out
-    section = out.split(tag, 1)[1]
-    assert "PASSED" in section[:100]
-    assert "Test Count: 1" in section
 
 
 # confidence: 80

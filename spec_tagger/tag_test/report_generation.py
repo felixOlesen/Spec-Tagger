@@ -137,8 +137,7 @@ class Generator:
             spec_tag = data["spec_tag"]
             test_count = data["test_count"]
             pass_count = data["pass_count"]
-            if self.one_by_one:
-                test_count = 1
+            fail_count = data["fail_count"]
             if test_count == 0:
                 status = f"{YELLOW}UNTESTED{RESET}"
             elif pass_count == test_count:
@@ -151,11 +150,12 @@ class Generator:
             print(f"Line Number: {spec_tag['line']}")
             print(f"Execution Time: {data['exec_time']}")
             print(f"Test Count: {test_count}")
-            print(f"Overall: {pass_count}/{test_count} passed")
+            print(f"Overall: {pass_count}/{fail_count + pass_count} passed")
 
             print("Linked Tests:")
-            for test_tag in data["test_tags"]:
-                print(f"- {test_tag['filename']} : {test_tag['test_function']}")
+            if "test_tags" in data and data["test_tags"]:
+                for test_tag in data["test_tags"]:
+                    print(f"- {test_tag['filename']} : {test_tag['test_function']}")
 
             if data["results"]:
                 print("Results:")

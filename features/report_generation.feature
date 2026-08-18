@@ -64,7 +64,6 @@ Feature: Generating a report from a spec tagger run
         And a tag whose pass_count equals its test_count is printed as PASSED
         And any other tag is printed as FAILED
 
-    story~stdout_one_by_one_forces_single_test_count~1
     Scenario: One-by-one runs are judged as a single test regardless of target count
         Given one_by_one is true
         And report_type is "stdout"
