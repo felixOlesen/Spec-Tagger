@@ -71,12 +71,14 @@ def commits_for_file(path: str, base: str, head: str) -> list[str]:
     return [m.strip() for m in out.split("\x00") if m.strip()]
 
 
-def changed_lines_from_diff(diff_text: str) -> dict[str, set[int]]:
+def changed_lines_from_diff(base: str, head: str) -> dict[str, set[int]]:
     """file -> set of line numbers changed on the NEW side."""
+
     import re
 
     HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
 
+    diff_text = _git("diff", "-U0", f"{base}...{head}")
     out, current, new_line = {}, None, 0
     for line in diff_text.splitlines():
         if line.startswith("+++ b/"):

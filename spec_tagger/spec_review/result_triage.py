@@ -159,29 +159,25 @@ class ResultTriage:
 
     def _get_uncovered_implementation_files(self):
         uncovered_files = set()
-        covered_files = set()
         coverage_filter = CoverageFilter(self.test_coverage)
-        for _, coverage_data in self.test_coverage.items():
-            for filename in coverage_data.keys():
-                if filename not in covered_files:
-                    covered_files.add(filename)
         changed_files = self.context_data["git_context"]["changed_files"]
-
+        covered_files = coverage_filter.file_to_covered_lines.keys()
+        print(f"COVERED FILES: {covered_files}")
+        print(f"CHANGED FILES: {changed_files}")
+        diff_file_to_lines = git_context.changed_lines_from_diff(
+            self.git_context["base"], self.git_context["head"]
+        )
         for changed_file in changed_files:
+            if changed_file in covered_files and changed_file.startswith(self.src_dir):
+                if changed_file in coverage_filter.file_to_covered_lines:
+                    line_diff = (
+                        diff_file_to_lines[changed_file]
+                        - coverage_filter.file_to_covered_lines[changed_file]
+                    )
+                    print(f"LINE DIFF FOUND for file {changed_file}: {line_diff}")
             if changed_file not in covered_files and changed_file.startswith(
                 self.src_dir
             ):
-                changed_lines_for_file = git_context.changed_lines_from_diff(
-                    git_context.diff_for_file(
-                        changed_file, self.git_context["base"], self.git_context["head"]
-                    )
-                )
-                if changed_file in coverage_filter.file_to_covered_lines:
-                    line_diff = (
-                        changed_lines_for_file
-                        - coverage_filter.file_to_covered_lines[changed_file]
-                    )
-                    print(f"LINE DIFF FOUND: {line_diff}")
                 uncovered_files.add(changed_file)
 
         return list(uncovered_files)

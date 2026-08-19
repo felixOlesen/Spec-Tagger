@@ -2,18 +2,18 @@
 
 ### Uncovered behavioural changes (1)
 
-**CoverageFilter._filter_missing_and_covered_lines updates per-file covered and missing line sets and removes any missing lines that are also covered, so that file_to_missing_lines only contains lines that are genuinely uncovered.** · confidence 95
+**Returns whether a specific line number in a given file is considered covered, based on the filtered coverage data (a line is covered if it appears in the file's covered_lines set and is not present in the filtered missing_lines set after overlap removal).** · confidence 92
 `spec_tagger/spec_review/coverage_filter.py` — uncovered
 
 Suggested spec item:
 
-> Given a coverage dictionary, CoverageFilter maintains file-to-covered-lines and file-to-missing-lines sets, and filters missing lines by removing those present in the covered set, ensuring missing lines are truly uncovered.
+> Given a file path and line number, the CoverageFilter.is_line_covered method returns True if the line is within the set of covered lines for that file after filtering out overlapping missing lines, and False otherwise.
 
 <details><summary>Evidence</summary>
 
 ```
-if len(missing_lines) == 0 and len(covered_lines) == 0: continue
-self.file_to_missing_lines[file] -= self.file_to_covered_lines[file]
++    def is_line_covered(self, file: str, line: int):
++        pass
 ```
 
 </details>
