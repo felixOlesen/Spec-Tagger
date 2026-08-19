@@ -32,7 +32,6 @@ class FailureDiagnostic(BaseModel):
         )
     )
     evidence: list[str] = Field(
-        default_factory=list,
         description=(
             "Specific quoted or referenced items from the inputs that support the "
             "verdict — a commit message, a changed line, the failing assertion. "
@@ -40,7 +39,6 @@ class FailureDiagnostic(BaseModel):
         ),
     )
     suggested_edit: str | None = Field(
-        default=None,
         description=(
             "The minimal replacement text that resolves the disagreement. Provide "
             "ONLY for test_wrong or spec_wrong. Never for code_wrong — a probable "
@@ -64,11 +62,11 @@ class SemanticDrift(BaseModel):
         ge=0, le=100, description="Certainty in this judgement, 0-100."
     )
     what_prose_claims: str = Field(
-        description="In one sentence, the behaviour the spec prose describes."
+        description="In one or two sentences, the behaviour the spec prose describes."
     )
     what_test_verifies: str = Field(
         description=(
-            "In one sentence, the behaviour the test actually asserts. State this "
+            "In one or two sentences, the behaviour the test actually asserts. State this "
             "from the assertions themselves, not from the test's name."
         )
     )
@@ -120,14 +118,12 @@ class UncoveredChange(BaseModel):
         )
     )
     evidence: list[str] = Field(
-        default_factory=list,
         description=(
             "Specific lines or hunks from the diff that establish this behaviour. "
             "Quote or reference real content so a reviewer can verify the claim."
         ),
     )
     matches_stated_intent: bool | None = Field(
-        default=None,
         description=(
             "True if the commit messages or PR description mention this change; "
             "false if the change is present in the diff but unmentioned; null if "
@@ -136,7 +132,6 @@ class UncoveredChange(BaseModel):
         ),
     )
     suggested_spec: str | None = Field(
-        default=None,
         description=(
             "For 'uncovered' or 'test_only' behavioural changes, a one-or-two "
             "sentence draft spec item describing this behaviour, written at the "
@@ -160,7 +155,6 @@ class CoverageGapReport(BaseModel):
     """The full result of scanning one PR's implementation changes."""
 
     changes: list[UncoveredChange] = Field(
-        default_factory=list,
         description=(
             "One entry per distinct behavioural change. Merge related edits that "
             "serve a single behaviour into one entry rather than listing each hunk. "
@@ -275,7 +269,6 @@ class InvalidTagResolution(BaseModel):
         )
     )
     proposed_value: str | None = Field(
-        default=None,
         description=(
             "The concrete replacement the action calls for: the new tag name for "
             "'rename_tag', the target file:line for 'relocate_tag', the new revision "
@@ -284,7 +277,6 @@ class InvalidTagResolution(BaseModel):
         ),
     )
     affects: list[str] = Field(
-        default_factory=list,
         description=(
             "Other tags or locations this resolution would also change — the sibling "
             "duplicates being renamed, or the other tags of the same revision that "
@@ -307,7 +299,6 @@ class InvalidTagResolution(BaseModel):
         )
     )
     requires_content_change: bool = Field(
-        default=False,
         description=(
             "True if resolving this needs an edit to spec prose or test logic rather "
             "than to a tag alone. Those edits are never applied automatically — they "

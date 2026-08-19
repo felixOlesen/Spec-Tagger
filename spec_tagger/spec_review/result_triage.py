@@ -128,7 +128,9 @@ class ResultTriage:
             )
             self.solutions.append(solution)
         else:
-            uncovered_implementation_files = self._get_uncovered_implementation_files()
+            uncovered_implementation_files, file_to_uncovered_lines = (
+                self._get_uncovered_implementation_files()
+            )
             for file in uncovered_implementation_files:
                 solution = Solution(
                     related_tag=None,
@@ -156,6 +158,39 @@ class ResultTriage:
                     ai_usage_recommended=True,
                 )
                 self.solutions.append(solution)
+            for file, lines in file_to_uncovered_lines.items():
+                whole_log = git_context.get_git_log_for_list_of_lines(
+                    file, lines, self.git_context["base"], self.git_context["head"]
+                )
+                diff = ""
+                if whole_log:
+                    for log in whole_log:
+                        diff += f"\n{log}"
+                commit_messages = git_context.get_git_log_for_list_of_lines(
+                    file,
+                    lines,
+                    self.git_context["base"],
+                    self.git_context["head"],
+                    True,
+                )
+                solution = Solution(
+                    related_tag=None,
+                    location=f"{file}",
+                    item=None,
+                    git_commit_messages=commit_messages,
+                    git_diff=diff,
+                    test_coverage=None,
+                    problem_type=ProblemType.IMPLEMENTATION_CHANGE_NOT_COVERED,
+                    problem_statement=[
+                        ProblemType.IMPLEMENTATION_CHANGE_NOT_COVERED.value
+                    ],
+                    solution_statement=[
+                        SolutionMessages.UNCOVERED_IMPLEMENTATION_CHANGE.value
+                    ],
+                    ai_enabled=self.ai_enabled,
+                    ai_usage_recommended=True,
+                )
+                self.solutions.append(solution)
 
     def _get_uncovered_implementation_files(self):
         uncovered_files = set()
@@ -167,6 +202,8 @@ class ResultTriage:
         diff_file_to_lines = git_context.changed_lines_from_diff(
             self.git_context["base"], self.git_context["head"]
         )
+
+        file_to_line_diff = {}
         for changed_file in changed_files:
             if changed_file in covered_files and changed_file.startswith(self.src_dir):
                 if changed_file in coverage_filter.file_to_covered_lines:
@@ -174,13 +211,16 @@ class ResultTriage:
                         diff_file_to_lines[changed_file]
                         - coverage_filter.file_to_covered_lines[changed_file]
                     )
-                    print(f"LINE DIFF FOUND for file {changed_file}: {line_diff}")
-            if changed_file not in covered_files and changed_file.startswith(
+                    if line_diff:
+                        print(f"LINE DIFF FOUND for file {changed_file}: {line_diff}")
+                        if changed_file not in file_to_line_diff:
+                            file_to_line_diff[changed_file] = set()
+                        file_to_line_diff[changed_file].update(line_diff)
+            elif changed_file not in covered_files and changed_file.startswith(
                 self.src_dir
             ):
                 uncovered_files.add(changed_file)
-
-        return list(uncovered_files)
+        return list(uncovered_files), file_to_line_diff
 
     def _triage_invalid_tags(self):
         if self.invalid_tags:

@@ -92,3 +92,42 @@ def changed_lines_from_diff(base: str, head: str) -> dict[str, set[int]]:
         elif current and not line.startswith("-"):
             new_line += 1
     return out
+
+
+def get_git_log_for_list_of_lines(
+    file: str, lines: set[int], base: str, head: str, message_only: bool = False
+):
+    runs = _get_contiguous_runs(lines)
+    if not runs:
+        return []
+
+    args = []
+    if message_only:
+        for start, end in runs:
+            args += ["-s", f"{start},{end}:{file}"]
+    else:
+        for start, end in runs:
+            args += ["-L", f"{start},{end}:{file}"]
+
+    out = _git("log", f"{base}...{head}", *args, "--format=%s%n%n%b%x00")
+
+    return [m.strip() for m in out.split("\x00") if m.strip()]
+
+
+def _get_contiguous_runs(lines: set[int], tolerance: int = 2) -> list[tuple[int, int]]:
+    """Group line numbers into (start, end) runs.
+    `tolerance` merges runs separated by small gaps — a 1-2 line gap is usually
+    an unchanged brace or blank line inside one logical change, and merging
+    avoids emitting dozens of single-line ranges."""
+    if not lines:
+        return []
+    ordered = sorted(lines)
+    runs, start, prev = [], ordered[0], ordered[0]
+    for n in ordered[1:]:
+        if n - prev <= tolerance + 1:
+            prev = n
+        else:
+            runs.append((start, prev))
+            start = prev = n
+    runs.append((start, prev))
+    return runs

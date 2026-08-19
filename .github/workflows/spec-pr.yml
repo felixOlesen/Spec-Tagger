@@ -3,6 +3,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths: ['features/**', 'tests/**', 'spec_tagger/**']
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -146,7 +146,6 @@ class Linker:
         for tag in all_tags:
             if not tag["validity"]["valid"] and "ignore" not in tag:
                 self.invalid_tags.append(tag)
-                print(f"Found invalid tag: {tag}")
 
     def check_revisions(self):
         revision_map = self.spec_data.tag_revisions
