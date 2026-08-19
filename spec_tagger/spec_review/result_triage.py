@@ -34,6 +34,7 @@ class ResultTriage:
     def __init__(
         self,
         context_data: dict,
+        src_dir: str,
         ai_enabled: bool = False,
         semantic_drift_included: bool = True,
         failure_diagnostic_included: bool = True,
@@ -83,6 +84,7 @@ class ResultTriage:
         self.tag_suggestion_included = tag_suggestion_included
         self.invalid_tags_included = invalid_tags_included
         self.entire_diff_included = entire_diff_included
+        self.src_dir = src_dir
 
     def _print_keys(self, data_dict: dict, name: str, value_also: bool = False):
 
@@ -119,7 +121,7 @@ class ResultTriage:
                 item=None,
                 git_commit_messages=self.git_context["commit_messages"],
                 git_diff=self.git_context["diff"],
-                test_coverage=self.test_coverage[invalid["full_tag"]],
+                test_coverage=None,
                 problem_type=ProblemType.IMPLEMENTATION_CHANGE_NOT_COVERED,
                 problem_statement=[ProblemType.IMPLEMENTATION_CHANGE_NOT_COVERED.value],
                 solution_statement=[
@@ -169,7 +171,9 @@ class ResultTriage:
         changed_files = self.context_data["git_context"]["changed_files"]
 
         for changed_file in changed_files:
-            if changed_file not in covered_files:
+            if changed_file not in covered_files and changed_file.startswith(
+                self.src_dir
+            ):
                 uncovered_files.add(changed_file)
 
         return list(uncovered_files)

@@ -26,6 +26,13 @@ class Prompt:
         self.context_evidence = context_evidence
         self.problem_type = problem_type
 
+    def pretty_print_prompt(self):
+        print("------------------------------Prompt------------------------------")
+        print(f"\nSchema Used:\n{self.schema}\n")
+        print(f"\nSystem Prompt Used:\n{self.system_prompt}\n")
+        print(f"\nContext Evidence:\n{self.context_evidence}\n")
+        print(f"\nProblem Type:\n{self.problem_type}\n")
+
 
 class PromptConstructor:
     def __init__(self, solutions: list[Solution], git_global_context) -> None:
@@ -111,18 +118,38 @@ class PromptConstructor:
         return self.prompts
 
     def _build_contextual_evidence(self, solution: Solution) -> str:
-        tag_and_background = f"The tag that is in question is: {solution.related_tag}. Here is a general statement of the problem: {solution.problem_statement}, and here is a statement describing how this problem would generally be diagnosed and solved: {solution.solution_statement}."
+        tag_and_background = ""
+        if solution.related_tag:
+            tag_and_background += (
+                f"The tag that is in question is: {solution.related_tag}."
+            )
+        tag_and_background += f"Here is a general statement of the problem: {solution.problem_statement}, and here is a statement describing how this problem would generally be diagnosed and solved: {solution.solution_statement}."
+
         git_pr_info = ""
         if self.git_global_context["pr_title"]:
             git_pr_info = f"The github PR Title: {self.git_global_context['pr_title']} and the pull-request description is: {self.git_global_context['pr_description']}"
-        git_commit_and_diff = f"Here are the commit messages that cover changes made to relevant files: {solution.git_commit_messages}\n Here are the git diffs of the the changed files relevant to the tag: {solution.git_diff}\n"
+
+        git_commit_and_diff = ""
+        if solution.git_commit_messages:
+            git_commit_and_diff += f"Here are the commit messages that cover changes made to relevant files: {solution.git_commit_messages}\n"
+
+        if solution.git_diff:
+            git_commit_and_diff = f"Here are the git diffs of the the changed files relevant to the tag: {solution.git_diff}\n"
+
+        spec_and_test_items = ""
+        if solution.item:
+            spec_and_test_items = f"Here is more relevant information to this task of either a spec entry or test block for reference to the task: {solution.item}"
+
         coverage_info = ""
         if solution.test_coverage:
             coverage_info = f"Here is the test coverage information relevant to the tag to understand what files in the implementation code have been covered by the connected test code: {json.dumps(solution.test_coverage)}"
+
         stdout = ""
         if solution.stdout:
             stdout = f"Here is the stdout of the tests that have run: {solution.stdout}"
-        evidence_str = f"{tag_and_background}\n{git_pr_info}\n{git_commit_and_diff}\n{coverage_info}\n{stdout}"
+
+        evidence_str = f"{tag_and_background}\n{git_pr_info}\n{git_commit_and_diff}\n{spec_and_test_items}\n{coverage_info}\n{stdout}"
+
         return evidence_str
 
     def _build_system_prompt(self, system_prompt: SystemPrompt) -> str:

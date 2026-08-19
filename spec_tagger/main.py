@@ -78,6 +78,10 @@ def main():
         help="Tells the tool, that you want to specifically include the entire diff in the 'un-covered implementation file checking' stage instead of just looking at changed files that haven't been covered at all by the current testing in place, WARNING: This could result in very large token usage if your git diff is large, please double check that the usage will be sufficient for your needs.",
         action="store_true",
     )
+    spec_review_parser.add_argument(
+        "--src_dir",
+        help="Directory where your application source code is located, allows for the tool to ignore non-implementation files that are present in git.",
+    )
 
     # CORE TOOL ARGS
     parser.add_argument(

@@ -1,12 +1,7 @@
 from pathlib import Path
 import os
-from dotenv import load_dotenv
-from spec_tagger.ai.anthropic_controller import AnthropicController
-from spec_tagger.ai.prompt_construction import PromptConstructor
-from spec_tagger.ai.schemas import SemanticDrift
 from spec_tagger.spec_review.context_aggregator import ContextAggregator
 from spec_tagger.spec_review.result_triage import ProblemType, ResultTriage
-from spec_tagger.ai.litellm_controller import LiteLLMController
 
 
 def validate_args(args):
@@ -14,6 +9,8 @@ def validate_args(args):
         raise ValueError(f"report_input '{args.report_input}' is none")
     if args.report_input and not Path.is_file(args.report_input):
         raise ValueError(f"report_iput '{args.report_input}' file does not exist")
+    if args.src_dir and not Path.is_dir(args.src_dir):
+        raise ValueError(f"src_dir '{args.src_dir}' folder does not exist")
 
 
 def run(args):
@@ -23,12 +20,15 @@ def run(args):
     collected_context = aggregator.get_all_context()
     git_global_context = aggregator.git_context_data
     # Classify Problem
-    triage = ResultTriage(collected_context)
+    triage = ResultTriage(collected_context, args.src_dir)
     solutions = triage.filter_results()
     for solution in solutions:
         solution.display_data()
     # Construct Prompt OR NO-AI Method
     if not args.no_ai:
+        from spec_tagger.ai.prompt_construction import PromptConstructor
+        from spec_tagger.ai.litellm_controller import LiteLLMController
+
         prompt_constructor = PromptConstructor(solutions, git_global_context)
         prompts = prompt_constructor.construct_prompt_list()
         ai_controller = LiteLLMController(
@@ -36,6 +36,7 @@ def run(args):
         )
         findings = []
         for prompt in prompts:
+            prompt.pretty_print_prompt()
             response, usage_info, cost_usd = ai_controller.send_prompt(
                 prompt.schema,
                 prompt.context_evidence,
