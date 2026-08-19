@@ -14,6 +14,8 @@ def validate_args(args):
         raise ValueError(f"report_input '{args.report_input}' is none")
     if args.report_input and not Path.is_file(args.report_input):
         raise ValueError(f"report_iput '{args.report_input}' file does not exist")
+    if args.src_dir and not Path.is_dir(args.src_dir):
+        raise ValueError(f"src_dir '{args.src_dir}' folder does not exist")
 
 
 def run(args):
@@ -23,7 +25,7 @@ def run(args):
     collected_context = aggregator.get_all_context()
     git_global_context = aggregator.git_context_data
     # Classify Problem
-    triage = ResultTriage(collected_context)
+    triage = ResultTriage(collected_context, args.src_dir)
     solutions = triage.filter_results()
     for solution in solutions:
         solution.display_data()
@@ -36,6 +38,7 @@ def run(args):
         )
         findings = []
         for prompt in prompts:
+            prompt.pretty_print_prompt()
             response, usage_info, cost_usd = ai_controller.send_prompt(
                 prompt.schema,
                 prompt.context_evidence,
