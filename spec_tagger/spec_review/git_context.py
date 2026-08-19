@@ -69,3 +69,24 @@ def commits_for_file(path: str, base: str, head: str) -> list[str]:
     """Commit messages that touched `path` in the given range."""
     out = _git("log", f"{base}...{head}", "--format=%s%n%n%b%x00", "--", path)
     return [m.strip() for m in out.split("\x00") if m.strip()]
+
+
+def changed_lines_from_diff(diff_text: str) -> dict[str, set[int]]:
+    """file -> set of line numbers changed on the NEW side."""
+    import re
+
+    HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
+
+    out, current, new_line = {}, None, 0
+    for line in diff_text.splitlines():
+        if line.startswith("+++ b/"):
+            current = line[6:]
+            out.setdefault(current, set())
+        elif m := HUNK.match(line):
+            new_line = int(m.group(1))
+        elif current and line.startswith("+") and not line.startswith("+++"):
+            out[current].add(new_line)
+            new_line += 1
+        elif current and not line.startswith("-"):
+            new_line += 1
+    return out

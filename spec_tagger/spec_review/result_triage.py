@@ -1,4 +1,5 @@
 from spec_tagger.spec_review import git_context
+from spec_tagger.spec_review.coverage_filter import CoverageFilter
 from spec_tagger.tag_test.spec_test_data import Invalidities
 from enum import Enum
 from spec_tagger.spec_review.solution import Solution
@@ -55,7 +56,6 @@ class ResultTriage:
         self.test_coverage = context_data["report"]["coverage_data"]["test_coverage"]
         self.test_failures = []
         self.test_passes = []
-        print(context_data["report"])
         for tag, info in context_data["report"]["test_results"].items():
             failure_presence = False
             for result in info["results"]:
@@ -160,6 +160,7 @@ class ResultTriage:
     def _get_uncovered_implementation_files(self):
         uncovered_files = set()
         covered_files = set()
+        coverage_filter = CoverageFilter(self.test_coverage)
         for _, coverage_data in self.test_coverage.items():
             for filename in coverage_data.keys():
                 if filename not in covered_files:
@@ -170,6 +171,15 @@ class ResultTriage:
             if changed_file not in covered_files and changed_file.startswith(
                 self.src_dir
             ):
+                output = git_context.changed_lines_from_diff(
+                    git_context.diff_for_file(
+                        changed_file, self.git_context["base"], self.git_context["head"]
+                    )
+                )
+                print(
+                    f"{changed_file} Output-------------------------------------------------"
+                )
+                print(output)
                 uncovered_files.add(changed_file)
 
         return list(uncovered_files)
@@ -344,9 +354,6 @@ class ResultTriage:
 
     def _passed_test_check(self, test_result) -> tuple[str, list[str], str, str] | None:
         # Get the related files for the tests and spec, if any of them show up in the changed files
-        print("-------------------------------")
-        print(test_result)
-        print("-------------------------------")
         file_to_tag = {test_result["spec_tag"]["filename"]: test_result["spec_tag"]}
         for test_tag in test_result["test_tags"]:
             file_to_tag[test_tag["filename"]] = test_tag
