@@ -57,10 +57,6 @@ class ResultTriage:
         self.test_passes = []
         print(context_data["report"])
         for tag, info in context_data["report"]["test_results"].items():
-            print("------------------------------------")
-            print(tag)
-            print(info)
-            print("------------------------------------")
             failure_presence = False
             for result in info["results"]:
                 if result["outcome"] == "failed":
