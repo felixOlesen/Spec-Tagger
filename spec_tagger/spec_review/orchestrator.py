@@ -1,12 +1,7 @@
 from pathlib import Path
 import os
-from dotenv import load_dotenv
-from spec_tagger.ai.anthropic_controller import AnthropicController
-from spec_tagger.ai.prompt_construction import PromptConstructor
-from spec_tagger.ai.schemas import SemanticDrift
 from spec_tagger.spec_review.context_aggregator import ContextAggregator
 from spec_tagger.spec_review.result_triage import ProblemType, ResultTriage
-from spec_tagger.ai.litellm_controller import LiteLLMController
 
 
 def validate_args(args):
@@ -31,6 +26,9 @@ def run(args):
         solution.display_data()
     # Construct Prompt OR NO-AI Method
     if not args.no_ai:
+        from spec_tagger.ai.prompt_construction import PromptConstructor
+        from spec_tagger.ai.litellm_controller import LiteLLMController
+
         prompt_constructor = PromptConstructor(solutions, git_global_context)
         prompts = prompt_constructor.construct_prompt_list()
         ai_controller = LiteLLMController(
