@@ -171,15 +171,17 @@ class ResultTriage:
             if changed_file not in covered_files and changed_file.startswith(
                 self.src_dir
             ):
-                output = git_context.changed_lines_from_diff(
+                changed_lines_for_file = git_context.changed_lines_from_diff(
                     git_context.diff_for_file(
                         changed_file, self.git_context["base"], self.git_context["head"]
                     )
                 )
-                print(
-                    f"{changed_file} Output-------------------------------------------------"
-                )
-                print(output)
+                if changed_file in coverage_filter.file_to_covered_lines:
+                    line_diff = (
+                        changed_lines_for_file
+                        - coverage_filter.file_to_covered_lines[changed_file]
+                    )
+                    print(f"LINE DIFF FOUND: {line_diff}")
                 uncovered_files.add(changed_file)
 
         return list(uncovered_files)

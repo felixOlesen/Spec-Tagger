@@ -25,7 +25,6 @@ class Linker:
             tag_group = target_tag.split("~")
             tag_partial = tag_group[0] + "~" + tag_group[1]
             target_tag = tag_partial
-
         self.target_tag = target_tag
         self.spec_subset = spec_subset
 
@@ -147,6 +146,7 @@ class Linker:
         for tag in all_tags:
             if not tag["validity"]["valid"] and "ignore" not in tag:
                 self.invalid_tags.append(tag)
+                print(f"Found invalid tag: {tag}")
 
     def check_revisions(self):
         revision_map = self.spec_data.tag_revisions
