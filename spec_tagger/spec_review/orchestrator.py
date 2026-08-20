@@ -115,6 +115,8 @@ def render(findings) -> str:
                 d.reasoning,
                 "",
             ]
+            if d.suggested_change:
+                out += ["Suggested change:", "", "```", d.suggested_change, "```", ""]
 
     if priority_changes:
         out += [f"### Uncovered behavioural changes ({len(priority_changes)})", ""]
@@ -133,6 +135,8 @@ def render(findings) -> str:
                 ]
             if c.suggested_spec:
                 out += ["Suggested spec item:", "", f"> {c.suggested_spec}", ""]
+            if c.suggested_test:
+                out += ["Suggested test:", "", "```", c.suggested_test, "```", ""]
             if c.evidence:
                 snippet = "\n".join(l for l in c.evidence if l.strip())
                 out += [
