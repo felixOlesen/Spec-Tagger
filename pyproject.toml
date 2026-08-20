@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spec-tagger"
-version = "0.0.6"
+version = "0.0.8"
 description = "Tag-based spec-to-test traceability and test runner"
 requires-python = ">=3.10"
 dependencies = ["coverage>=7.15"]
@@ -21,6 +21,7 @@ ai = [
   "litellm>=1.82",
   "python-dotenv>=1.2",
   "pydantic>=2.13",
+  "tenacity>=9.1",
 ]
 
 [tool.pytest.ini_options]
