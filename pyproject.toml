@@ -4,12 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spec-tagger"
-version = "0.0.4"
+version = "0.0.6"
 description = "Tag-based spec-to-test traceability and test runner"
 requires-python = ">=3.10"
-dependencies = [
-    "coverage>=7.15",
-]
+dependencies = ["coverage>=7.15"]
 
 [project.scripts]
 spectagger = "spec_tagger.main:main"
@@ -18,7 +16,12 @@ spectagger = "spec_tagger.main:main"
 include = ["spec_tagger*"]
 
 [project.optional-dependencies]
-ai = ["anthropic>=0.120", "litellm>=1.82", "python-dotenv>=1.2", "pydantic>=2.13"]
+ai = [
+  "anthropic>=0.120",
+  "litellm>=1.82",
+  "python-dotenv>=1.2",
+  "pydantic>=2.13",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
