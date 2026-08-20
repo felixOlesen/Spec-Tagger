@@ -133,11 +133,11 @@ class SpecTagData(TagData):
                 if feature["filename"] == next_feature["filename"]:
                     feature["closing_line"] = next_feature["line"] - 1
                 else:
-                    feature["closing_line"] = -1
+                    feature["closing_line"] = None
                 if i == len(self.features) - 2:
-                    next_feature["closing_line"] = -1
+                    next_feature["closing_line"] = None
         elif len(self.features) == 1:
-            self.features[0]["closing_line"] = -1
+            self.features[0]["closing_line"] = None
 
         if len(self.stories) > 1:
             for i in range(len(self.stories) - 1):
@@ -146,11 +146,11 @@ class SpecTagData(TagData):
                 if story["filename"] == next_story["filename"]:
                     story["closing_line"] = next_story["line"] - 1
                 else:
-                    story["closing_line"] = -1
+                    story["closing_line"] = None
                 if i == len(self.stories) - 2:
-                    next_story["closing_line"] = -1
+                    next_story["closing_line"] = None
         elif len(self.stories) == 1:
-            self.stories[0]["closing_line"] = -1
+            self.stories[0]["closing_line"] = None
 
     def identify_duplicates(self, target_tag=None):
         all_tags = self.get_all_tags()
@@ -185,7 +185,7 @@ class TestTagData(TagData):
             same_line_stack = []
             for index, tag in enumerate(tags):
                 if index == (len(tags) - 1):
-                    tag["closing_line"] = -1
+                    tag["closing_line"] = None
                 else:
                     next_tag = tags[index + 1]
                     if next_tag["line"] == tag["line"]:

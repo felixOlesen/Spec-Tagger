@@ -54,7 +54,8 @@ class SemanticDrift(BaseModel):
     drifted: bool = Field(
         description=(
             "True if the test no longer verifies what the prose describes, even "
-            "though it passes. False if the test still genuinely checks the "
+            "though it passes. Don't just check the assertions but the entire diff, spec content, and test content, if the process is different, it might indicate that drift has occurred."
+            "False if the test still genuinely checks the "
             "described behaviour."
         )
     )
@@ -67,11 +68,14 @@ class SemanticDrift(BaseModel):
     what_test_verifies: str = Field(
         description=(
             "In one or two sentences, the behaviour the test actually asserts. State this "
-            "from the assertions themselves, not from the test's name."
+            "from the assertions themselves, not just from the test's name. Also make sure to check the content of the test when available, to see if there's any drift in the process, even if the outcome is the same."
         )
     )
     reasoning: str = Field(
-        description="Why these two do or do not describe the same behaviour."
+        description="Why the spec prose and the tests do or do not describe the behabiour."
+    )
+    suggested_change: str = Field(
+        description="If you believe there is drift present, provide an educated suggestion about what needs to change to fix the semantic drift, provide a maximum of 4 lines as a snapshot of what the solution can look like, it doesn't have to be complete, just give the developer an idea of how it can be fixed."
     )
 
 
@@ -90,9 +94,8 @@ class UncoveredChange(BaseModel):
     behaviour: str = Field(
         description=(
             "What the changed code now does, stated as observable behaviour a user "
-            "or API caller could notice — not as a description of the code. Write "
-            "'rejects promo codes that expired more than 30 days ago', not "
-            "'added an expiry check to validate_code'. One sentence."
+            "could notice not literally describing what the code does, but what changes"
+            "to the behaviour of the software appear from the code changes."
         )
     )
     files: list[str] = Field(
@@ -137,6 +140,15 @@ class UncoveredChange(BaseModel):
             "sentence draft spec item describing this behaviour, written at the "
             "same altitude as the existing spec items. Null otherwise. Do not "
             "invent a tag or revision number."
+        ),
+    )
+    suggested_test: str | None = Field(
+        description=(
+            "For uncovered behavioral changes, suggest a test function that the developer could"
+            "could implement in the test code to cover the change. Try to include as many real functions as you can"
+            "but also feel free to use pseudo code or comments to indicate steps that you cannot find direct code for"
+            "when going through the test steps. Write the test in the programming language of the uncovered change you've been given."
+            "If you are completely unable to write code for the test, then write a 2 to 3 sentence description of what you want the test to check."
         ),
     )
     confidence: int = Field(

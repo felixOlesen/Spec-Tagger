@@ -86,8 +86,8 @@ class Crawler:
                 closing_line = tag["closing_line"]
                 with open(file, "r", encoding="utf-8-sig") as f:
                     lines = f.readlines()
-                if closing_line > (len(lines) - 1):
-                    closing_line = -1
+                if closing_line is not None and closing_line > (len(lines) - 1):
+                    closing_line = None
                 item_slice = lines[(item_start_line - 1) : (closing_line)]
                 tag["content"] = item_slice
 

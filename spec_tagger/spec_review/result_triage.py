@@ -392,26 +392,29 @@ class ResultTriage:
 
     def _passed_test_check(self, test_result) -> tuple[str, list[str], str, str] | None:
         # Get the related files for the tests and spec, if any of them show up in the changed files
-        file_to_tag = {test_result["spec_tag"]["filename"]: test_result["spec_tag"]}
-        for test_tag in test_result["test_tags"]:
-            file_to_tag[test_tag["filename"]] = test_tag
-        files = set(file_to_tag.keys())
+        spec_tag = test_result["spec_tag"]
+        all_tags = [spec_tag, *test_result["test_tags"]]
+        files = {tag["filename"] for tag in all_tags}
         relevant_files = files.intersection(self.git_context["changed_files"])
         if len(relevant_files) > 0:
-            spec_content = test_result["spec_tag"]["content"]
+            spec_content = spec_tag["content"]
             diff_string = "Diffs for Connected Files:\n"
             commit_messages = []
             item_contents = f"Spec Item Content: {spec_content}\n"
             file_locations = "File Locations:\n"
-            for file in relevant_files:
-                tag = file_to_tag[file]
-                tag_line = tag["line"]
-                commit_messages.append(
-                    f"File commit_messages: {tag['full_tag']}\n {git_context.commits_for_file(file, self.git_context['base'], self.git_context['head'])}\n"
-                )
-                diff_string += f"Related Diff to Tag: {tag['full_tag']}\n {git_context.diff_for_file(file, self.git_context['base'], self.git_context['head'])}\n"
-                item_contents += f"Tag Item Contents: {tag['content']}"
-                file_locations += f"{file}:{tag_line}\n"
+            diffed_files = set()
+            for tag in all_tags:
+                file = tag["filename"]
+                if tag is not spec_tag:
+                    tag_line = tag["line"]
+                    item_contents += f"Tag Item Contents: {tag['content']}"
+                    file_locations += f"{file}:{tag_line}\n"
+                if file in relevant_files and file not in diffed_files:
+                    commit_messages.append(
+                        f"File commit_messages: {tag['full_tag']}\n {git_context.commits_for_file(file, self.git_context['base'], self.git_context['head'])}\n"
+                    )
+                    diff_string += f"Related Diff to Tag: {tag['full_tag']}\n {git_context.diff_for_file(file, self.git_context['base'], self.git_context['head'])}\n"
+                    diffed_files.add(file)
             return diff_string, commit_messages, file_locations, item_contents
         else:
             return None
