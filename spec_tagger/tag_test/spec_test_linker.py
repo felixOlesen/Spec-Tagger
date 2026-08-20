@@ -160,6 +160,8 @@ class Linker:
         for tag in all_tags:
             if self.spec_subset and tag["tag_partial"] not in revision_map:
                 continue
+            if tag["tag_partial"] not in revision_map:
+                continue
             revisions = revision_map[tag["tag_partial"]]
             if len(revisions) > 1 and "ignore" not in tag:
                 highest_revision = max(revisions)

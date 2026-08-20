@@ -12,6 +12,6 @@
   description: Checks tags and runs the tests linked to spec items
   entry: spectagger
   language: python
-  files: ^(features/|tests/|spec_tagger/)
+  files: ^(features/|tests/|spec_tagger/src)
   pass_filenames: false
   stages: [pre-push]

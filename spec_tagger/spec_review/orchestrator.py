@@ -7,7 +7,7 @@ from spec_tagger.spec_review.result_triage import ProblemType, ResultTriage
 def validate_args(args):
     if not args.report_input:
         raise ValueError(f"report_input '{args.report_input}' is none")
-    if args.report_input and not Path.is_file(args.report_input):
+    if args.report_input and not Path.is_file(Path(args.report_input)):
         raise ValueError(f"report_iput '{args.report_input}' file does not exist")
     if args.src_dir and not Path.is_dir(args.src_dir):
         raise ValueError(f"src_dir '{args.src_dir}' folder does not exist")

@@ -74,9 +74,6 @@ class Crawler:
                 print(f"No tags were found in {tagless_file}")
 
     def _extract_item_snapshots(self):
-        print(
-            "---------------------------------------------------- Item Snapshots ----------------------------------------------------"
-        )
         # loop through tag data
         # Extract line and closing_line
         # look at file, get lines from file, retrieve slice
