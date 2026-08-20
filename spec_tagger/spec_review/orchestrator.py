@@ -9,7 +9,7 @@ def validate_args(args):
         raise ValueError(f"report_input '{args.report_input}' is none")
     if args.report_input and not Path.is_file(Path(args.report_input)):
         raise ValueError(f"report_iput '{args.report_input}' file does not exist")
-    if args.src_dir and not Path.is_dir(args.src_dir):
+    if args.src_dir and not Path.is_dir(Path(args.src_dir)):
         raise ValueError(f"src_dir '{args.src_dir}' folder does not exist")
 
 
