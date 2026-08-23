@@ -57,6 +57,7 @@ class SemanticDrift(BaseModel):
             "though it passes. Don't just check the assertions but the entire diff, spec content, and test content, if the process is different, it might indicate that drift has occurred."
             "False if the test still genuinely checks the "
             "described behaviour."
+            "Focus less on aesthetic changes such as changed variable names, when the code does the exact same thing."
         )
     )
     confidence: int = Field(
@@ -95,7 +96,10 @@ class UncoveredChange(BaseModel):
         description=(
             "What the changed code now does, stated as observable behaviour a user "
             "could notice not literally describing what the code does, but what changes"
-            "to the behaviour of the software appear from the code changes."
+            "to the behaviour of the software appear from the code changes. Determine whether or not"
+            "the change should be an actionable change based on the content of the change"
+            "Understand that the code you're looking at is a git log of the changes and may not describe the full picture of the change."
+            "Other code might be present that is covered by the tests that have been run, while the lines you see might be an unexplored branch."
         )
     )
     files: list[str] = Field(

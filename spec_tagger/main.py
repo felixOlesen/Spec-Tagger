@@ -1,4 +1,5 @@
 import argparse
+from spec_tagger.merge_analysis import orchestrator as merge_analysis_orchestrator
 from spec_tagger.tag_test import orchestrator as tag_test_orchestrator
 from spec_tagger.spec_review import orchestrator as review_orchestrator
 import spec_tagger.agent_skill.skill_installer as skill_installer
@@ -9,7 +10,7 @@ def main():
     sub_parsers = parser.add_subparsers(dest="command")
     skill_parser = sub_parsers.add_parser("install-skill")
     spec_review_parser = sub_parsers.add_parser("spec-review")
-
+    merge_analysis_parser = sub_parsers.add_parser("merge-analysis")
     # SKILL INSTALL ARGS
     skill_parser.add_argument(
         "--destination",
@@ -26,6 +27,12 @@ def main():
         help="Prints a where the file would be installed without actually installing it, good for testing.",
         action="store_true",
     )
+
+    # MERGE ANALYSIS ARGS
+    # Args:
+    # --manifest
+    # --root
+    # --report-unresolved
 
     # SPEC REVIEW ARGS
     spec_review_parser.add_argument(
@@ -184,6 +191,9 @@ def main():
         case "spec-review":
             print("Spec-Reivew command invoked")
             return review_orchestrator.run(args=args)
+        case "merge-analysis":
+            print("Merge-analysis command invoked")
+            return merge_analysis_orchestrator.run(args=args)
         case _:
             print("No command, running core tool...")
             return tag_test_orchestrator.run(args)
