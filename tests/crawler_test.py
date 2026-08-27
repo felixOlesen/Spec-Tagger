@@ -1,4 +1,5 @@
 from spec_tagger.tag_test.spec_test_crawler import SpecCrawler, TestCrawler
+from spec_tagger.tag_test.test_runner import Runner
 
 
 # feat~spec_crawling~1
@@ -57,3 +58,46 @@ def test_example_2():
 def test_dead_func_1():
     # raise Exception
     assert True
+
+
+TEST_CLASS_FIXTURE = "test_data/tests/example_class_test.py"
+
+
+# feat~pytest_class_support~1
+def test_pytest_class_method_resolves_to_class_qualified_name():
+    crawler = TestCrawler(
+        verbose=False, test_dir="test_data/tests", framework="python.pytest"
+    )
+    tag_data = crawler.run()
+
+    tags = tag_data.file_to_tag[TEST_CLASS_FIXTURE]
+    resolved = {tag["full_tag"]: tag["test_function"] for tag in tags}
+
+    assert resolved["feat~example_class_tag~1"] == "TestExampleClass::test_class_method"
+    assert (
+        resolved["feat~example_nested_class_tag~1"]
+        == "TestExampleClass::TestNestedClass::test_nested_method"
+    )
+
+
+# feat~pytest_class_support~1
+def test_pytest_class_method_builds_correct_command():
+    crawler = TestCrawler(
+        verbose=False, test_dir="test_data/tests", framework="python.pytest"
+    )
+    tag_data = crawler.run()
+    tag = tag_data.get_tag("feat~example_class_tag~1")
+
+    runner = Runner(
+        test_run_command="pytest {tests}",
+        test_format="{file}::{name}",
+        test_join=None,
+        linked_tags=None,
+        one_by_one=False,
+        test_coverage_location="",
+        coverage_library=None,
+        verbose=False,
+    )
+    target = runner.format_target(tag)
+
+    assert target == f"{TEST_CLASS_FIXTURE}::TestExampleClass::test_class_method"

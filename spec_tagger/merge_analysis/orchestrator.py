@@ -1,3 +1,7 @@
+from spec_tagger.merge_analysis.change_search import ChangeSearch
+from spec_tagger.merge_analysis.case_construction import CaseConstructor
+
+
 def validate_args(args):
     pass
 
@@ -28,5 +32,20 @@ def run(args):
     #   as the commit.
     #
     #   Adjudicate findings against your pre-registered expectations.
+    search = ChangeSearch(args.spec_dir, args.test_dir, args.src_dir)
+    incomplete_matrices, complete_matrices, commit_times = search.run()
 
+    # Right now the overarching flow is:
+    constructor = CaseConstructor(
+        incomplete_matrices,
+        complete_matrices,
+        args.case_dir,
+        args.repo_abs_path,
+        args.spec_dir,
+        args.test_dir,
+        args.src_dir,
+        commit_times,
+    )
+    constructor.run()
+    # filter results -> From the candidates, human review the promising ones -> tag candidates -> run tool ->collect results from llm suggestions
     pass

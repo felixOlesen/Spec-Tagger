@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Invalidities(Enum):
+class Invalidities(str, Enum):
     TAG_REVISION_MISMATCH = (
         "Revision number is outdated compared to other tags with the same identifier."
     )

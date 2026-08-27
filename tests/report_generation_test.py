@@ -154,6 +154,43 @@ def test_python_coverage_reports_are_parsed_per_tag(tmp_path):
     assert file_coverage["missing_lines"] == [4]
 
 
+# confidence: 85
+# story~simplecov_reports_are_parsed_per_tag~1
+def test_simplecov_reports_are_parsed_per_tag(tmp_path):
+    coverage_dir = tmp_path / "coverage"
+    coverage_dir.mkdir()
+    tag = tag_id("feat", "example", 1)
+
+    abs_path = str(tmp_path / "src" / "example.rb")
+    coverage_report = {
+        "meta": {"spectagger_merged": True},
+        "coverage": {
+            abs_path: {"lines": [1, 0, None, 2]},
+        },
+    }
+    (coverage_dir / f"{tag}_cov.json").write_text(json.dumps(coverage_report))
+
+    links = {"feat~example": make_link(tag)}
+    test_output = {tag: make_test_result(test_count=1, pass_count=1)}
+
+    generator = make_generator(
+        tmp_path,
+        successful_links=links,
+        test_output=test_output,
+        test_coverage_location=str(coverage_dir),
+        test_coverage_library="ruby.simplecov",
+    )
+    generator.repo_root = str(tmp_path)  # normally os.getcwd(); pinned for the test
+    generator._construct_report_object()
+
+    file_coverage = generator.output_object["coverage_data"]["test_coverage"][tag][
+        "src/example.rb"
+    ]
+    assert file_coverage["coverage"] == pytest.approx(66.666666, rel=1e-4)
+    assert file_coverage["covered_lines"] == [1, 4]
+    assert file_coverage["missing_lines"] == [2]
+
+
 # confidence: 90
 # story~json_report_written_to_disk~1
 def test_json_report_written_to_disk(tmp_path):

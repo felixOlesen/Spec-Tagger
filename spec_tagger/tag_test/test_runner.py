@@ -1,10 +1,14 @@
 import subprocess
 import shlex
+import shutil
 import time
 import datetime
+import json
+from pathlib import Path
 
 
 class Runner:
+    SIMPLECOV_DIR = "coverage"  # SimpleCov's default coverage_dir
     def __init__(
         self,
         test_run_command: str,
@@ -67,6 +71,50 @@ class Runner:
                 cmd.append(part)
         return cmd
 
+    def _reset_simplecov_dir(self):
+        # Between-tag equivalent of `coverage erase`, since SimpleCov has no CLI for it.
+        shutil.rmtree(self.SIMPLECOV_DIR, ignore_errors=True)
+
+    def _read_simplecov_result(self) -> dict[str, list]:
+        result_path = Path(self.SIMPLECOV_DIR, ".resultset.json")
+        if not result_path.exists():
+            result_path = Path(self.SIMPLECOV_DIR, "coverage.json")
+        if not result_path.exists():
+            return {}
+
+        data = json.loads(result_path.read_text())
+
+        # Two possible shapes:
+        #   coverage.json    (simplecov_json_formatter) -> {"meta":…, "coverage": {...}}
+        #   .resultset.json  (raw SimpleCov)            -> {"<CommandName>": {"coverage": {...}}}
+        if "coverage" in data and "meta" in data:
+            file_maps = [data["coverage"]]
+        else:
+            file_maps = [
+                v["coverage"] for v in data.values()
+                if isinstance(v, dict) and "coverage" in v
+            ]
+
+        file_lines = {}
+        for file_map in file_maps:
+            for path, entry in file_map.items():
+                # Newer SimpleCov nests under "lines"; older is a bare array.
+                file_lines[path] = entry["lines"] if isinstance(entry, dict) else entry
+        return file_lines
+
+    def _merge_simplecov_result(self, accumulator: dict[str, list]):
+        # Boot file has SimpleCov.use_merging false, so each run's result file is
+        # only that run's data — union it into the accumulator ourselves.
+        for path, lines in self._read_simplecov_result().items():
+            if path not in accumulator:
+                accumulator[path] = list(lines)
+                continue
+            existing = accumulator[path]
+            for idx, hits in enumerate(lines):
+                if hits is None or existing[idx] is None:
+                    continue
+                existing[idx] = max(existing[idx], hits)
+
     def run_tests(self, dry_run: bool = False) -> dict | None:
         results = {}  # tag_str -> 'passed' | 'failed' | 'untested'
 
@@ -115,13 +163,17 @@ class Runner:
 
             if self.coverage_library == "python.coverage":
                 subprocess.run(["coverage", "erase"])
-
+            elif self.coverage_library == "ruby.simplecov":
+                self._reset_simplecov_dir()
             print(f"Running tests for {tag_str} ...")
             start_time = time.perf_counter()
             res = []
+            simplecov_accumulator = {}
 
             for index, command in enumerate(command_list):
                 res.append(subprocess.run(command, capture_output=True, text=True))
+                if self.coverage_library == "ruby.simplecov":
+                    self._merge_simplecov_result(simplecov_accumulator)
             end_time = time.perf_counter()
             if self.coverage_library == "python.coverage":
                 subprocess.run(
@@ -132,6 +184,18 @@ class Runner:
                         f"{self.test_coverage_location}/{tag_str}_cov.json",
                     ]
                 )
+            elif self.coverage_library == "ruby.simplecov":
+                coverage_payload = {
+                    "meta": {"spectagger_merged": True},
+                    "coverage": {
+                        path: {"lines": lines}
+                        for path, lines in simplecov_accumulator.items()
+                    },
+                }
+                with open(
+                    f"{self.test_coverage_location}/{tag_str}_cov.json", "w"
+                ) as f:
+                    json.dump(coverage_payload, f)
 
             results[tag_str] = {
                 "test_date": str(datetime.datetime.now()),

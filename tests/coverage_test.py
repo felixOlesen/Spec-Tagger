@@ -25,3 +25,8 @@ def test_coverage_library_support():
 # step~python_coverage_support~1
 def test_python_coverage_support():
     pass
+
+
+# step~ruby_simplecov_support~1
+def test_ruby_simplecov_support():
+    pass

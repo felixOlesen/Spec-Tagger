@@ -82,7 +82,9 @@ class Crawler:
         self.tag_data.update_item_closing_lines()
         for file, tags in self.tag_data.file_to_tag.items():
             for tag in tags:
-                item_start_line = tag["item_start_line"]
+                item_start_line = tag["line"]
+                if not item_start_line:
+                    print(tag)
                 closing_line = tag["closing_line"]
                 with open(file, "r", encoding="utf-8-sig") as f:
                     lines = f.readlines()
@@ -163,6 +165,7 @@ class TestCrawler(Crawler):
 
         FW_INFO = FRAMEWORKS[self.framework]
         func_pattern = FW_INFO.get("func")
+        class_pattern = FW_INFO.get("class_pattern")
         describe_pattern = FW_INFO.get("describe")
         example_pattern = FW_INFO.get("example")
         skip_prefixes = FW_INFO["skip_prefixes"]
@@ -203,7 +206,7 @@ class TestCrawler(Crawler):
                         m = example_pattern.match(line)
                         if m:
                             desc = m.group(1)
-                            path = self._describe_path(
+                            path = self._enclosing_path(
                                 lines, start + offset, describe_pattern
                             )
                             found = " > ".join(path + [desc])
@@ -216,6 +219,12 @@ class TestCrawler(Crawler):
                         if m:
                             found = next((g for g in m.groups() if g is not None), None)
                             found_at = start + offset + 1
+                            if class_pattern and found:
+                                class_path = self._enclosing_path(
+                                    lines, start + offset, class_pattern
+                                )
+                                if class_path:
+                                    found = "::".join(class_path + [found])
                             break
                     break
 
@@ -233,9 +242,9 @@ class TestCrawler(Crawler):
                 if self.verbose:
                     print(f"Test Function found: {found}\nAt: {filename}:{found_at}")
 
-    def _describe_path(self, lines, example_idx, describe_pattern):
-        """Collect enclosing describe descriptions above `example_idx`, using
-        indentation as the nesting proxy. Returns outermost-first."""
+    def _enclosing_path(self, lines, example_idx, container_pattern):
+        """Collect enclosing containers (describe blocks or classes) above
+        `example_idx`, using indentation as the nesting proxy. Returns outermost-first."""
         path = []
         example_indent = len(lines[example_idx]) - len(lines[example_idx].lstrip())
         current = example_indent
@@ -247,7 +256,7 @@ class TestCrawler(Crawler):
             indent = len(line) - len(line.lstrip())
             if indent >= current:
                 continue  # sibling or deeper: not an ancestor
-            m = describe_pattern.match(line)
+            m = container_pattern.match(line)
             if m:
                 path.append(m.group(1).strip("\"'"))
                 current = indent
@@ -263,6 +272,7 @@ class TestCrawler(Crawler):
 
         FW_INFO = FRAMEWORKS[self.framework]
         func_pattern = FW_INFO.get("func")
+        class_pattern = FW_INFO.get("class_pattern")
         describe_pattern = FW_INFO.get("describe")
         example_pattern = FW_INFO.get("example")
         skip_prefixes = FW_INFO["skip_prefixes"]
@@ -288,7 +298,7 @@ class TestCrawler(Crawler):
                     m = example_pattern.match(line)
                     if m:
                         desc = m.group(1)
-                        path = self._describe_path(
+                        path = self._enclosing_path(
                             lines, start + line_num, describe_pattern
                         )
                         found = " > ".join(path + [desc])
@@ -301,6 +311,12 @@ class TestCrawler(Crawler):
                     if m:
                         found = next((g for g in m.groups() if g is not None), None)
                         found_at = line_num
+                        if class_pattern and found:
+                            class_path = self._enclosing_path(
+                                lines, line_num - 1, class_pattern
+                            )
+                            if class_path:
+                                found = "::".join(class_path + [found])
                         self._add_missed_test_tag(found, file, found_at)
         if self.verbose:
             if self.missed_tests_in_tagged_files:

@@ -35,6 +35,7 @@ class Generator:
         self.test_coverage_location = test_coverage_location
         self.test_coverage_data = None
         self.test_coverage_library = test_coverage_library
+        self.repo_root = os.getcwd()
 
     def generate_report(self):
         self._construct_report_object()
@@ -83,7 +84,7 @@ class Generator:
                 case "python.coverage":
                     self.test_coverage_data = self.parse_coveragepy_json()
                 case "ruby.simplecov":
-                    pass
+                    self.test_coverage_data = self.parse_simplecov_json()
 
         self.output_object["one_by_one"] = self.one_by_one
         self.output_object["test_results"] = self.test_output
@@ -238,6 +239,62 @@ class Generator:
                         tag_to_implementation_coverage[tag][covered_file][
                             "covered_lines"
                         ] = coverage_data["executed_lines"]
+
+        return tag_to_implementation_coverage
+
+    def parse_simplecov_json(self) -> dict[str, dict]:
+        """Parse SimpleCov reports into the same shape as parse_coveragepy_json."""
+        tag_to_implementation_coverage = {}
+        path = self.test_coverage_location
+        if not os.path.isdir(path):
+            return tag_to_implementation_coverage
+
+        for root, _, files in os.walk(path):
+            for file in files:
+                if not file.endswith(".json"):
+                    continue
+                full_tag = file.split("_cov.json")[0]
+                print(f"json report found: {file}")
+
+                data = json.loads(Path(root, file).read_text())
+
+                # Two possible shapes:
+                #   coverage.json    (simplecov_json_formatter) -> {"meta":…, "coverage": {...}}
+                #   .resultset.json  (raw SimpleCov)            -> {"<CommandName>": {"coverage": {...}}}
+                if "coverage" in data and "meta" in data:
+                    file_maps = [data["coverage"]]
+                else:
+                    file_maps = [
+                        v["coverage"]
+                        for v in data.values()
+                        if isinstance(v, dict) and "coverage" in v
+                    ]
+
+                merged = tag_to_implementation_coverage.setdefault(full_tag, {})
+
+                for file_map in file_maps:
+                    for abs_path, entry in file_map.items():
+                        # Newer SimpleCov nests under "lines"; older is a bare array.
+                        lines = entry["lines"] if isinstance(entry, dict) else entry
+
+                        covered, missing = [], []
+                        for idx, hits in enumerate(lines):
+                            if hits is None:  # not executable
+                                continue
+                            (covered if hits > 0 else missing).append(idx + 1)
+
+                        # SimpleCov writes ABSOLUTE paths; normalise so they match
+                        # the relative paths git and coverage.py use.
+                        rel = os.path.relpath(abs_path, self.repo_root)
+
+                        relevant = len(covered) + len(missing)
+                        merged[rel] = {
+                            "coverage": (100.0 * len(covered) / relevant)
+                            if relevant
+                            else 0.0,
+                            "missing_lines": missing,
+                            "covered_lines": covered,
+                        }
 
         return tag_to_implementation_coverage
 

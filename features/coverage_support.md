@@ -19,3 +19,4 @@ Coverage libraries need to be supported to allow for the CI pipeline to get enou
 Currently these libraries need to be supported:
 
 - Coverage (Python) step~python_coverage_support~1
+- Coverage (Ruby/SimpleCov) step~ruby_simplecov_support~1

@@ -95,7 +95,7 @@ Currently registered:
 
 | Framework       | Extensions                  | Resolves to                             | Detected from                   |
 | --------------- | ---------------------------- | ---------------------------------------- | --------------------------------- |
-| `python.pytest` | `.py`                        | function name (`test...`)                | `pytest` in the command            |
+| `python.pytest` | `.py`                        | function name (`test...`), class-qualified when nested in a `class` (`Class::test...`) | `pytest` in the command            |
 | `ruby.minitest` | `.rb`                         | function name (`test_...`)               | `ruby ... -Itest` / `minitest`     |
 | `ruby.rspec`    | `.rb`                         | `describe`/`it` description path         | `rspec` in the command             |
 | `js.jest`       | `.js`, `.ts`, `.jsx`, `.tsx`  | `describe`/`it`/`test` description path  | `jest` in the command              |
@@ -185,6 +185,23 @@ spectagger --test_command "pytest {tests}" --report --report_type html --report_
 ```
 
 `--report` is ignored under `--dry_run` (nothing runs, so there's nothing to report on).
+
+### Coverage libraries
+
+Pass `--coverage_library` (`python.coverage` or `ruby.simplecov`) alongside `--coverage_report_path` (a directory that must already exist) to have `Runner` capture per-tag line coverage, which `Generator` then folds into the report's `coverage_data.test_coverage` under each spec tag.
+
+For each spec tag, `Runner` resets the coverage tool, runs that tag's linked tests, and writes the result to `<coverage_report_path>/<tag>_cov.json`. `Generator` then reads every `*_cov.json` in that directory and derives `coverage` / `covered_lines` / `missing_lines` per file.
+
+- **`python.coverage`** — works out of the box: `Runner` shells out to `coverage erase` / `coverage json -o ...` directly, so your `--test_command` just needs to run under `coverage run` (e.g. `coverage run -m pytest {tests}`).
+- **`ruby.simplecov`** — SimpleCov has no CLI equivalent for erase/output-to-path, so it needs a one-time snippet in your test suite's boot file (`spec_helper.rb` / `rails_helper.rb`), and `Runner` union-merges each individual test invocation's result itself rather than relying on SimpleCov's own timeout-based merging (more robust for `--one_by_one` runs of unknown duration):
+
+  ```ruby
+  require 'simplecov'
+  SimpleCov.use_merging false
+  SimpleCov.start
+  ```
+
+  With `use_merging` disabled, SimpleCov overwrites its result file on every run instead of merging across runs — `Runner` reads that file after each individual test invocation within a tag and unions the covered/missing line sets in Python before moving to the next tag.
 
 ## Language support
 

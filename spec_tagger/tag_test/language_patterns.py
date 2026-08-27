@@ -14,6 +14,7 @@ FRAMEWORKS = {
     "python.pytest": {
         "extensions": {".py"},
         "func": re.compile(r"^\s*(?:async\s+)?def\s+(test\w*)"),
+        "class_pattern": re.compile(r"^\s*class\s+(\w+)"),
         "skip_prefixes": ("#", "@"),
         "block_style": None,
         "address_mode": "name",
