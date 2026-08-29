@@ -36,11 +36,11 @@ class ResultTriage:
         self,
         context_data: dict,
         src_dir: str,
-        ai_enabled: bool = False,
+        ai_enabled: bool = True,
         semantic_drift_included: bool = True,
         failure_diagnostic_included: bool = True,
-        tag_suggestion_included: bool = True,
-        invalid_tags_included: bool = True,
+        tag_suggestion_included: bool = False,
+        invalid_tags_included: bool = False,
         entire_diff_included: bool = False,
     ):
         self.context_data = context_data
@@ -64,9 +64,10 @@ class ResultTriage:
                     break
             if failure_presence:
                 self.test_failures.append({"tag": tag, "result": info})
+                print(tag)
             else:
                 self.test_passes.append({"tag": tag, "result": info})
-
+                print(tag)
         # self._print_keys(self.git_context, "Git Context", True)
         self._print_keys(self.invalid_tags, "Invalid Tags")
         self._print_keys(
@@ -327,7 +328,7 @@ class ResultTriage:
                 test_coverage = None
                 if test_fail["tag"] in self.test_coverage:
                     test_coverage = self.test_coverage[test_fail["tag"]]
-                if test_fail["result"]["error"]:
+                if "error" in test_fail["result"] and test_fail["result"]["error"]:
                     solution = Solution(
                         related_tag=test_fail["tag"],
                         location=related_files,
@@ -343,7 +344,7 @@ class ResultTriage:
                         stdout=test_fail["result"]["error"],
                     )
                     self.solutions.append(solution)
-                else:
+                elif "output" in test_fail["result"]:
                     solution = Solution(
                         related_tag=test_fail["tag"],
                         location=related_files,
@@ -395,7 +396,12 @@ class ResultTriage:
         spec_tag = test_result["spec_tag"]
         all_tags = [spec_tag, *test_result["test_tags"]]
         files = {tag["filename"] for tag in all_tags}
+        print(files)
         relevant_files = files.intersection(self.git_context["changed_files"])
+        print(self.git_context["changed_files"])
+        print(
+            "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+        )
         if len(relevant_files) > 0:
             spec_content = spec_tag["content"]
             diff_string = "Diffs for Connected Files:\n"

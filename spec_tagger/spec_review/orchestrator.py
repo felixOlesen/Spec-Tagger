@@ -16,7 +16,7 @@ def validate_args(args):
 def run(args):
     validate_args(args)
     # Aggregate Context
-    aggregator = ContextAggregator(args.report_input)
+    aggregator = ContextAggregator(args.report_input, args.base, args.head)
     collected_context = aggregator.get_all_context()
     git_global_context = aggregator.git_context_data
     # Classify Problem

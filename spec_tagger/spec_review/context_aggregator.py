@@ -5,10 +5,12 @@ import json
 
 
 class ContextAggregator:
-    def __init__(self, report_path: str) -> None:
+    def __init__(self, report_path: str, base, head) -> None:
         self.report_path = report_path
         self.report_data = None
         self.git_context_data = None
+        self.git_base = base
+        self.git_head = head
 
     def _retrieve_report_data(self):
         path = Path(self.report_path)
@@ -20,7 +22,9 @@ class ContextAggregator:
             )
 
     def _collect_git_context(self):
-        self.git_context_data = git_context.collect_context()
+        self.git_context_data = git_context.collect_context(
+            self.git_base, self.git_head
+        )
 
     def get_all_context(self) -> dict:
         self._retrieve_report_data()

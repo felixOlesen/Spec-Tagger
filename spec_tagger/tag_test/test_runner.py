@@ -8,7 +8,11 @@ from pathlib import Path
 
 
 class Runner:
+    """The runner class provides functionality for running the tests connected to tags.
+    The tests are run spec tag-by-spec tag."""
+
     SIMPLECOV_DIR = "coverage"  # SimpleCov's default coverage_dir
+
     def __init__(
         self,
         test_run_command: str,
@@ -29,7 +33,8 @@ class Runner:
         self.coverage_library = coverage_library
         self.verbose = verbose
 
-    def format_target(self, tag: dict):
+    def format_target(self, tag: dict) -> str:
+        """Formats a test target to be injected into the test_command provided in the main.py args."""
         if "test_function" not in tag:
             return tag["filename"]
         return self.test_format.format(
@@ -37,6 +42,7 @@ class Runner:
         )
 
     def build_targets_for_link(self, link: dict) -> list:
+        """Joins the test targets together to be injected into the test_command arg in main.py"""
         # Dedupe and prune within this one spec tag's tests.
         targets = []
         seen = set()
@@ -62,6 +68,8 @@ class Runner:
         return targets
 
     def build_command_for_targets(self, targets: list) -> list:
+        """Constructs the command that will be run during testing, allows for
+        running of test targets one_by_one or multiple in a sinlge command"""
         cmd = []
         for part in shlex.split(self.test_run_command):
             if part == "{tests}" or part == "{files}":
@@ -71,11 +79,12 @@ class Runner:
                 cmd.append(part)
         return cmd
 
-    def _reset_simplecov_dir(self):
+    def _reset_simplecov_dir(self) -> None:
         # Between-tag equivalent of `coverage erase`, since SimpleCov has no CLI for it.
         shutil.rmtree(self.SIMPLECOV_DIR, ignore_errors=True)
 
     def _read_simplecov_result(self) -> dict[str, list]:
+        """Parses simplecov coverage report"""
         result_path = Path(self.SIMPLECOV_DIR, ".resultset.json")
         if not result_path.exists():
             result_path = Path(self.SIMPLECOV_DIR, "coverage.json")
@@ -85,13 +94,14 @@ class Runner:
         data = json.loads(result_path.read_text())
 
         # Two possible shapes:
-        #   coverage.json    (simplecov_json_formatter) -> {"meta":…, "coverage": {...}}
-        #   .resultset.json  (raw SimpleCov)            -> {"<CommandName>": {"coverage": {...}}}
+        #   coverage.json (simplecov_json_formatter) -> {"meta":…, "coverage": {...}}
+        #   .resultset.json (raw SimpleCov) -> {"<CommandName>": {"coverage": {...}}}
         if "coverage" in data and "meta" in data:
             file_maps = [data["coverage"]]
         else:
             file_maps = [
-                v["coverage"] for v in data.values()
+                v["coverage"]
+                for v in data.values()
                 if isinstance(v, dict) and "coverage" in v
             ]
 
@@ -103,8 +113,9 @@ class Runner:
         return file_lines
 
     def _merge_simplecov_result(self, accumulator: dict[str, list]):
+        """Merges simplecov coverage reports into a single location between runs"""
         # Boot file has SimpleCov.use_merging false, so each run's result file is
-        # only that run's data — union it into the accumulator ourselves.
+        # only that run's data.
         for path, lines in self._read_simplecov_result().items():
             if path not in accumulator:
                 accumulator[path] = list(lines)
@@ -116,6 +127,8 @@ class Runner:
                 existing[idx] = max(existing[idx], hits)
 
     def run_tests(self, dry_run: bool = False) -> dict | None:
+        """Main entrypoint for tag_test/orchestrator.py controls the flow of constructing
+        and running test commands and compiling the test results"""
         results = {}  # tag_str -> 'passed' | 'failed' | 'untested'
 
         if not self.linked_tags:

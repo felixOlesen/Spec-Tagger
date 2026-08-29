@@ -108,7 +108,14 @@ def main():
         "--src_dir",
         help="Directory where your application source code is located, allows for the tool to ignore non-implementation files that are present in git.",
     )
-
+    spec_review_parser.add_argument(
+        "--base",
+        help="Base of the repository that you want to compare your diffs against",
+    )
+    spec_review_parser.add_argument(
+        "--head",
+        help="Head of the repository that you want to compare your diffs against",
+    )
     # CORE TOOL ARGS
     parser.add_argument(
         "--target_spec",

@@ -9,21 +9,26 @@ TAG_PATTERN = (
 
 
 class Crawler:
+    """The Crawler class acts as the parent for the SpecCrawler and Test Crawler sub-classes
+    and contain all overlapping functionality between the sub-classes.
+    """
+
     def __init__(self, verbose, directory_or_files):
         self.directory_or_files = directory_or_files
         self.verbose = verbose
         self.files = []
         self.tag_data = TagData()
-        # self.tag_data = []
-        self.enabled_extensions = []  # This will be set in subclasses
+        self.enabled_extensions = []
         # Tag Regex should match to the format:
         # [feat or story or step]~[FEATURE NAME]~[REVISION NUMBER]
         # Example Tag: feat~MyFeature~1
         self.tag_regex = re.compile(TAG_PATTERN)
         self.tagless_files = set()
 
-    def crawl_files(self):
-
+    def crawl_files(self) -> None:
+        """Walks through a given directory with os.walk to collect file paths with
+        valid file extensions. These file paths are saved in self.files.
+        """
         found_files = []
         if type(self.directory_or_files) is str and os.path.isdir(
             self.directory_or_files
@@ -38,7 +43,11 @@ class Crawler:
 
         self.files = found_files
 
-    def extract_tags(self):
+    def extract_tags(self) -> None:
+        """Loops through all discovered files and crawls line-by-line
+        to locate tags through regular expressions, once discovered, they get added to
+        the self.tag_data TagData object.
+        """
         for file in self.files:
             with open(file, "r", encoding="utf-8-sig") as f:
                 for line_num, line in enumerate(f, start=1):
@@ -73,7 +82,11 @@ class Crawler:
             for tagless_file in self.tagless_files:
                 print(f"No tags were found in {tagless_file}")
 
-    def _extract_item_snapshots(self):
+    def _extract_item_snapshots(self) -> None:
+        """Loops through all the discovered tags and accesses their
+        respective files and the following lines to obtain a snapshot
+        of the relevant item to the tag
+        """
         # loop through tag data
         # Extract line and closing_line
         # look at file, get lines from file, retrieve slice
@@ -82,7 +95,7 @@ class Crawler:
         self.tag_data.update_item_closing_lines()
         for file, tags in self.tag_data.file_to_tag.items():
             for tag in tags:
-                item_start_line = tag["line"]
+                item_start_line = tag["item_start_line"]
                 if not item_start_line:
                     print(tag)
                 closing_line = tag["closing_line"]
@@ -95,6 +108,11 @@ class Crawler:
 
 
 class TestCrawler(Crawler):
+    """The test crawler class provides functionality specific to crawling through test
+    directories and files, such as identifying test signatures and un-tagged tests and files
+    as well as handling different support for different test formats in different languages.
+    """
+
     def __init__(
         self,
         verbose,
@@ -131,7 +149,14 @@ class TestCrawler(Crawler):
         self.test_declarations = {}
         self.missed_tests_in_tagged_files = {}
 
-    def run(self):
+    def run(self) -> TestTagData | None:
+        """Main way of initiating the crawl through test directory, called by tag_test/orchestrator.py
+        i. Crawls through files
+        ii. Extracts tags from found files
+        iii. Extracts Test Declarations and assigns them to tags
+        iv. Crawls for Un-covered tests
+        v. Extracts snapshots of each item
+        """
         self.crawl_files()
         if not self.files:
             if self.verbose:
@@ -149,13 +174,17 @@ class TestCrawler(Crawler):
         return self.tag_data
 
     def get_coverage_data(self) -> dict:
+        """Returns information on the files and tests that do not have any tags
+        in them, and are therefore un-covered"""
         missing_coverage_data = {
             "files": list(self.tagless_files),
             "tests": self.missed_tests_in_tagged_files,
         }
         return missing_coverage_data
 
-    def extract_and_assign_test_declarations(self):
+    def extract_and_assign_test_declarations(self) -> None:
+        """Filters through test files by reading the line numbers recorded from tags
+        to find test declarations based on regex based on the language and testing library"""
         # get mapping of filenames to tag data
         LINE_STOP_CONDITION = 20  # Number of lines to go across before giving up
         file_to_tag = self.tag_data.file_to_tag
@@ -242,7 +271,9 @@ class TestCrawler(Crawler):
                 if self.verbose:
                     print(f"Test Function found: {found}\nAt: {filename}:{found_at}")
 
-    def _enclosing_path(self, lines, example_idx, container_pattern):
+    def _enclosing_path(
+        self, lines: list[str], example_idx: int, container_pattern: re.Pattern
+    ) -> list:
         """Collect enclosing containers (describe blocks or classes) above
         `example_idx`, using indentation as the nesting proxy. Returns outermost-first."""
         path = []
@@ -255,7 +286,7 @@ class TestCrawler(Crawler):
                 continue
             indent = len(line) - len(line.lstrip())
             if indent >= current:
-                continue  # sibling or deeper: not an ancestor
+                continue  # sibling or deeper: not a parent
             m = container_pattern.match(line)
             if m:
                 path.append(m.group(1).strip("\"'"))
@@ -264,8 +295,8 @@ class TestCrawler(Crawler):
                     break
         return list(reversed(path))
 
-    def _crawl_for_uncovered_tests(self):
-
+    def _crawl_for_uncovered_tests(self) -> None:
+        """Crawls through partially covered files for un-tagged tests"""
         if not self.framework:
             print("Warning, exited due to null framework test function extraction.")
             return
@@ -338,7 +369,10 @@ class TestCrawler(Crawler):
 
 
 class SpecCrawler(Crawler):
-    # Can be a directory, list of files, single file, or specific tag.
+    """Spec Crawler class provides specific functionality for crawling through
+    the spec directory and allows for fine-grained running of specific tags, files,
+    or entire directories containing spec files with valid file extensions"""
+
     def __init__(self, verbose, spec_dir, enabled_extensions=None):
         super().__init__(verbose, spec_dir)
         self.enabled_extensions = {".spec", ".feature", ".md", ".txt"}
@@ -346,7 +380,13 @@ class SpecCrawler(Crawler):
             self.enabled_extensions.update(enabled_extensions)
         self.tag_data = SpecTagData()
 
-    def run(self):
+    def run(self) -> SpecTagData | None:
+        """Maint entrypoint for the tag_test/orchestrator.py file and runs the entire
+        spec crawling flow.
+            i. Crawls through spec files
+            ii. Extracts spec tags
+            iii. Extracts spec item snapshots
+        """
         self.crawl_files()
         if not self.files:
             print("No files found. Exiting.")
@@ -358,7 +398,10 @@ class SpecCrawler(Crawler):
 
         return self.tag_data
 
-    def crawl_files(self):
+    def crawl_files(self) -> None:
+        """Crawls through directory and records file paths that have
+        valid file extensions
+        """
         # Logic to crawl through the spec_dir and find spec files with enabled extensions.
         found_files = []
         # If spec_dir is a directory, walk through it

@@ -6,6 +6,9 @@ from spec_tagger.tag_test.spec_test_data import (
 
 
 class Linker:
+    """The Linker class provides functionality for linking spec tags against test tags
+    as well as identifying tag invalidities"""
+
     def __init__(
         self,
         spec_data: SpecTagData,
@@ -38,7 +41,7 @@ class Linker:
     # 7. Spec and test have the same tag, but the spec has a higher revision number than the test.
     # 8. Spec and test have the same tag, but the test has a higher revision number than the spec.
 
-    def display_data(self):
+    def display_data(self) -> None:
         if self.spec_data:
             print("Spec Data:")
             all_spec_tags = self.spec_data.get_all_tags()
@@ -66,7 +69,7 @@ class Linker:
             for invalid in self.invalid_tags:
                 print(invalid)
 
-    def display_invalid_tags(self):
+    def display_invalid_tags(self) -> None:
         if self.invalid_tags:
             print("\nInvalid Tags:")
             for invalid in self.invalid_tags:
@@ -76,6 +79,8 @@ class Linker:
                     print(f"  {reason}\n")
 
     def link_data(self) -> tuple[dict, list] | None:
+        """Main entrypoint for tag_test/orchestrator.py, links controls flow of linking
+        spec tags and test tags together"""
         if self.target_tag:
             self.filter_out_non_target_tags()
         self.spec_data.identify_duplicates()
@@ -127,19 +132,15 @@ class Linker:
                 )
                 self.linked_tags[key]["test_tags"] = None
 
-        # remove any entries from linked_tags where the test_tags list is empty
-        # self.linked_tags = {
-        #    k: v
-        #    for k, v in self.linked_tags.items()
-        #    if v["test_tags"] is not None and len(v["test_tags"]) > 0
-        # }
         self.invalid_tag_sweep()
         if self.verbose:
             self.display_data()
 
         return self.linked_tags, self.invalid_tags
 
-    def invalid_tag_sweep(self):
+    def invalid_tag_sweep(self) -> None:
+        """Filters through all the tags that have been linked and appends any tags
+        that have been flagged as invalid to self.invalid_tags"""
         all_tags = self.spec_data.get_all_tags()
         all_tags.extend(self.test_data.get_all_tags())
 
@@ -147,7 +148,8 @@ class Linker:
             if not tag["validity"]["valid"] and "ignore" not in tag:
                 self.invalid_tags.append(tag)
 
-    def check_revisions(self):
+    def check_revisions(self) -> None:
+        """Looks through all tag data to check for inconsistent revision numbers across matching tags"""
         revision_map = self.spec_data.tag_revisions
         all_tags = self.spec_data.get_all_tags()
         all_tags.extend(self.test_data.get_all_tags())
@@ -168,11 +170,14 @@ class Linker:
                 if tag["revision"] != highest_revision:
                     self.register_invalid_tag(tag, Invalidities.TAG_REVISION_MISMATCH)
 
-    def register_invalid_tag(self, tag, reason):
+    def register_invalid_tag(self, tag: dict, reason: Invalidities) -> None:
+        """Assigns validity status of False to a tag and provides a given reason"""
         tag["validity"]["valid"] = False
         tag["validity"]["reasons"].append(reason)
 
-    def filter_out_non_target_tags(self):
+    def filter_out_non_target_tags(self) -> None:
+        """Filters out tags that are not required to be run in the case that
+        a specific subset of spec tags are given to run instead of a spec directory"""
         all_tags = self.spec_data.get_all_tags()
         all_test_tags = self.test_data.get_all_tags()
         all_tags.extend(all_test_tags)

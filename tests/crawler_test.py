@@ -2,6 +2,17 @@ from spec_tagger.tag_test.spec_test_crawler import SpecCrawler, TestCrawler
 from spec_tagger.tag_test.test_runner import Runner
 
 
+def tag_id(tag_type, name, revision):
+    # Builds a "type~name~revision" string at runtime rather than as a
+    # source-level literal. This file lives under tests/, the project's own
+    # default test_dir, so the spectagger crawler regex-matches any literal
+    # tag-shaped substring on any line - including inside string literals in
+    # assertions, not just comments. A hardcoded literal tag string here
+    # would be picked up as a real (and orphaned) test tag when this
+    # project audits its own spec.
+    return f"{tag_type}~{name}~{revision}"
+
+
 # feat~spec_crawling~1
 def test_spec_runs_successfully():
     crawler = SpecCrawler(verbose=False, spec_dir="test_data/spec")
@@ -73,9 +84,12 @@ def test_pytest_class_method_resolves_to_class_qualified_name():
     tags = tag_data.file_to_tag[TEST_CLASS_FIXTURE]
     resolved = {tag["full_tag"]: tag["test_function"] for tag in tags}
 
-    assert resolved["feat~example_class_tag~1"] == "TestExampleClass::test_class_method"
     assert (
-        resolved["feat~example_nested_class_tag~1"]
+        resolved[tag_id("feat", "example_class_tag", "1")]
+        == "TestExampleClass::test_class_method"
+    )
+    assert (
+        resolved[tag_id("feat", "example_nested_class_tag", "1")]
         == "TestExampleClass::TestNestedClass::test_nested_method"
     )
 
@@ -86,7 +100,7 @@ def test_pytest_class_method_builds_correct_command():
         verbose=False, test_dir="test_data/tests", framework="python.pytest"
     )
     tag_data = crawler.run()
-    tag = tag_data.get_tag("feat~example_class_tag~1")
+    tag = tag_data.get_tag(tag_id("feat", "example_class_tag", "1"))
 
     runner = Runner(
         test_run_command="pytest {tests}",

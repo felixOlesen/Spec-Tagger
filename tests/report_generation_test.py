@@ -154,8 +154,6 @@ def test_python_coverage_reports_are_parsed_per_tag(tmp_path):
     assert file_coverage["missing_lines"] == [4]
 
 
-# confidence: 85
-# story~simplecov_reports_are_parsed_per_tag~1
 def test_simplecov_reports_are_parsed_per_tag(tmp_path):
     coverage_dir = tmp_path / "coverage"
     coverage_dir.mkdir()
