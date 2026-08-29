@@ -100,9 +100,7 @@ def test_spec_tag_with_no_matching_test_is_invalid():
     assert linked["feat~x"]["test_tags"] is None
     assert linked["feat~x"]["spec_tag"]["validity"]["valid"] is False
     assert invalid == [linked["feat~x"]["spec_tag"]]
-    assert (
-        Invalidities.NO_TEST_TAG_FOR_SPEC_TAG in invalid[0]["validity"]["reasons"]
-    )
+    assert Invalidities.NO_TEST_TAG_FOR_SPEC_TAG in invalid[0]["validity"]["reasons"]
 
     # The matched pair is unaffected.
     assert linked["feat~y"]["spec_tag"]["validity"]["valid"] is True
@@ -138,9 +136,7 @@ def test_test_tag_with_no_matching_spec_is_invalid_when_spec_subset():
     assert list(linked.keys()) == ["feat~known"]
     assert len(invalid) == 1
     assert invalid[0]["full_tag"] == tag_id("feat", "orphan", 1)
-    assert (
-        Invalidities.NO_SPEC_TAG_FOR_TEST_TAG in invalid[0]["validity"]["reasons"]
-    )
+    assert Invalidities.NO_SPEC_TAG_FOR_TEST_TAG in invalid[0]["validity"]["reasons"]
 
 
 @pytest.mark.skip(
@@ -371,6 +367,7 @@ def test_full_pipeline_links_example_fixtures():
 # confidence: 95
 # story~linker_flags_revision_mismatch_in_real_crawled_files~1
 def test_full_pipeline_flags_revision_mismatch_fixture():
+    example_var = None
     spec = SpecCrawler(verbose=False, spec_dir="test_data/spec").run()
     test = TestCrawler(
         verbose=False, test_dir="test_data/tests", framework="python.pytest"

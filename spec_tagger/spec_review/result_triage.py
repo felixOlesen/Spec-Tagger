@@ -39,8 +39,8 @@ class ResultTriage:
         ai_enabled: bool = True,
         semantic_drift_included: bool = True,
         failure_diagnostic_included: bool = True,
-        tag_suggestion_included: bool = False,
-        invalid_tags_included: bool = False,
+        tag_suggestion_included: bool = True,
+        invalid_tags_included: bool = True,
         entire_diff_included: bool = False,
     ):
         self.context_data = context_data
@@ -69,7 +69,6 @@ class ResultTriage:
                 self.test_passes.append({"tag": tag, "result": info})
                 print(tag)
         # self._print_keys(self.git_context, "Git Context", True)
-        self._print_keys(self.invalid_tags, "Invalid Tags")
         self._print_keys(
             self.uncovered_tests_and_files, "Un-Covered Tests and Files", True
         )
@@ -240,7 +239,7 @@ class ResultTriage:
                         self.git_context["base"],
                         self.git_context["head"],
                     ),
-                    test_coverage=self.test_coverage[invalid["full_tag"]],
+                    test_coverage=None,
                     problem_type=ProblemType.INVALID_TAG,
                     problem_statement=[],
                     solution_statement=[],
@@ -248,7 +247,7 @@ class ResultTriage:
                     ai_usage_recommended=False,
                 )
                 for reason in invalid["validity"]["reasons"]:
-                    solution.problem_statement.append(reason.value)
+                    solution.problem_statement.append(reason)
                     match reason:
                         case Invalidities.DUPLICATE_SPEC_TAG:
                             solution.solution_statement.append(
