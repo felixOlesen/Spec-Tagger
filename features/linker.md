@@ -142,7 +142,6 @@ sourced from real filesystem paths and line numbers rather than
 hand-constructed tag dictionaries.
 
 story~linker_flags_revision_mismatch_in_real_crawled_files~1
-Here is a change to the spec file
 A spec file and test file sharing an identifier but disagreeing on
 revision should produce exactly the outdated/no-valid-counterpart pairing
 described above, again this time sourced from real crawled files rather

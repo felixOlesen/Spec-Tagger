@@ -367,7 +367,6 @@ def test_full_pipeline_links_example_fixtures():
 # confidence: 95
 # story~linker_flags_revision_mismatch_in_real_crawled_files~1
 def test_full_pipeline_flags_revision_mismatch_fixture():
-    example_var = None
     spec = SpecCrawler(verbose=False, spec_dir="test_data/spec").run()
     test = TestCrawler(
         verbose=False, test_dir="test_data/tests", framework="python.pytest"
