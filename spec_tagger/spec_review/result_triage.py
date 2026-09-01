@@ -6,6 +6,8 @@ from spec_tagger.spec_review.solution import Solution
 
 
 class ProblemType(Enum):
+    """ """
+
     INVALID_TAG = "Invalid Tag has been found"
     TEST_FAILURE = "This test has failed"
     TEST_ERROR = "This test has error-ed out"

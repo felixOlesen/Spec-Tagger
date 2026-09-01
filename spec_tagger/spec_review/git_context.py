@@ -25,7 +25,7 @@ def _event_payload() -> dict:
     return json.loads(Path(path).read_text())
 
 
-def collect_context(base: str | None = None, head: str | None = None):
+def collect_context(base: str | None = None, head: str | None = None) -> dict:
     """Collect diff, commit messages, and PR metadata.
     works in CI and locally (falls back to git alone when not running in CI pipeline).
     """
@@ -96,7 +96,7 @@ def changed_lines_from_diff(base: str, head: str) -> dict[str, set[int]]:
 
 def get_git_log_for_list_of_lines(
     file: str, lines: set[int], base: str, head: str, message_only: bool = False
-):
+) -> list:
     runs = _get_contiguous_runs(lines)
     if not runs:
         return []

@@ -1,4 +1,6 @@
 import argparse
+import os
+from dotenv import load_dotenv
 from spec_tagger.merge_analysis import orchestrator as merge_analysis_orchestrator
 from spec_tagger.tag_test import orchestrator as tag_test_orchestrator
 from spec_tagger.spec_review import orchestrator as review_orchestrator
@@ -6,6 +8,8 @@ import spec_tagger.agent_skill.skill_installer as skill_installer
 
 
 def main():
+    load_dotenv()
+
     parser = argparse.ArgumentParser()
     sub_parsers = parser.add_subparsers(dest="command")
     skill_parser = sub_parsers.add_parser("install-skill")
@@ -36,20 +40,27 @@ def main():
     )
     merge_analysis_parser.add_argument(
         "--case_dir",
+        default=os.environ.get("MERGEANALYSIS_CASE_DIR", None),
         help="The absolute path that you want to store your captured cases or the one you want to run them from if --run_cases is flagged.",
     )
     merge_analysis_parser.add_argument(
         "--spec_dir",
+        default=os.environ.get("MERGEANALYSIS_SPEC_DIR", None),
         help="Directory where your specification/documentation is located.",
     )
     merge_analysis_parser.add_argument(
-        "--test_dir", help="Directory where your tests are located"
+        "--test_dir",
+        help="Directory where your tests are located",
+        default=os.environ.get("MERGEANALYSIS_TEST_DIR", None),
     )
     merge_analysis_parser.add_argument(
-        "--src_dir", help="Directory where your source code is located"
+        "--src_dir",
+        help="Directory where your source code is located",
+        default=os.environ.get("MERGEANALYSIS_SRC_DIR", None),
     )
     merge_analysis_parser.add_argument(
         "--repo_abs_path",
+        default=os.environ.get("MERGEANALYSIS_REPO_ABS_PATH", None),
         help="Absolute path for the repository that you're analysing merges for and want to run the tests against.",
     )
 
@@ -57,22 +68,22 @@ def main():
     spec_review_parser.add_argument(
         "--report_input",
         help="Tells the program where the report.json is for analysing the test results from a spectagger run.",
-        default="report",
+        default=os.environ.get("SPECREVIEW_REPORT_INPUT", "report"),
     )
     spec_review_parser.add_argument(
         "--model_provider",
         help="The provider route used in litellm to indicate a valid provider, for example 'gemini', 'nvidia_nim', 'openrouter', etc.",
-        default="gemini",
+        default=os.environ.get("SPECREVIEW_MODEL_PROVIDER", "gemini"),
     )
     spec_review_parser.add_argument(
         "--model_name",
         help="The model name is the name of the specific model that is valid for the provider that you are using, for example: 'gemini-3.5-flash'.",
-        default="gemini-3.5-flash",
+        default=os.environ.get("SPECREVIEW_MODEL_NAME", "gemini-3.5-flash"),
     )
     spec_review_parser.add_argument(
         "--rate_limit",
         help="This needs to be an integer describing the maximum responses per minute that are allowed for a specific endpoint, please refer to your API documentation for this.",
-        default=10,
+        default=os.environ.get("SPECREVIEW_RATE_LIMIT", 10),
     )
     spec_review_parser.add_argument(
         "--no_ai",
@@ -106,25 +117,28 @@ def main():
     )
     spec_review_parser.add_argument(
         "--src_dir",
+        default=os.environ.get("SPECREVIEW_SRC_DIR", None),
         help="Directory where your application source code is located, allows for the tool to ignore non-implementation files that are present in git.",
     )
     spec_review_parser.add_argument(
         "--base",
+        default=os.environ.get("SPECREVIEW_GIT_BASE", None),
         help="Base of the repository that you want to compare your diffs against",
     )
     spec_review_parser.add_argument(
         "--head",
+        default=os.environ.get("SPECREVIEW_GIT_HEAD", None),
         help="Head of the repository that you want to compare your diffs against",
     )
     # CORE TOOL ARGS
     parser.add_argument(
         "--target_spec",
-        default="features",
+        default=os.environ.get("SPECTAGGER_TARGET_SPEC", "features"),
         help="Target dir/file/tag/list of files to read through",
     )
     parser.add_argument(
         "--spec_file_extensions",
-        default=None,
+        default=os.environ.get("SPECTAGGER_FILE_EXTENSIONS", None),
         help="Comma-separated list of allowed spec file extensions",
     )
     parser.add_argument(
@@ -134,25 +148,28 @@ def main():
     )
     parser.add_argument(
         "--target_tag",
-        default=None,
+        default=os.environ.get("SPECTAGGER_TARGET_TAG", None),
         help="Specify a target tag for the crawler to look for and run tests against, works with specified files in taret_spec as well.",
     )
 
     parser.add_argument(
         "--test_dir",
-        default="tests",
+        default=os.environ.get("SPECTAGGER_TEST_DIR", "tests"),
         help="Root directory for all test files that need to be crawled through",
     )
     parser.add_argument(
-        "--test_command", help="Command to run the test, example: 'pytest {tests}'"
+        "--test_command",
+        help="Command to run the test, example: 'pytest {tests}'",
+        default=os.environ.get("SPECTAGGER_TEST_COMMAND", None),
     )
     parser.add_argument(
         "--test_format",
-        default="{file}::{name}",
+        default=os.environ.get("SPECTAGGER_TEST_FORMAT", "{file}::{name}"),
         help="How a single test is addressed on the CLI. Placeholders: {file} = test file path, {name} = test function name.",
     )
     parser.add_argument(
         "--test_framework",
+        default=os.environ.get("SPECTAGGER_TEST_FRAMEWORK", None),
         help="Providing a test framework string will override the detection function for a minor speed up, if no framework is found, the tool will resort to file-based testing",
     )
 
@@ -163,12 +180,12 @@ def main():
     )
     parser.add_argument(
         "--test_join",
-        default=None,
+        default=os.environ.get("SPECTAGGER_TEST_JOIN", None),
         help='If set, join all test targets with this separator into ONE argument (e.g. "|" for go test -run) instead of passing them separately.',
     )
     parser.add_argument(
         "--test_extensions",
-        default=None,
+        default=os.environ.get("SPECTAGGER_TEST_EXTENSIONS", None),
         help="Comma-separated list of allowed test file extensions",
     )
     parser.add_argument(
@@ -178,11 +195,13 @@ def main():
     )
     parser.add_argument("--report", help="Generate a report", action="store_true")
     parser.add_argument(
-        "--report_output", default=None, help="Directory to output the report"
+        "--report_output",
+        default=os.environ.get("SPECTAGGER_REPORT_OUTPUT", None),
+        help="Directory to output the report",
     )
     parser.add_argument(
         "--report_type",
-        default="json",
+        default=os.environ.get("SPECTAGGER_REPORT_TYPE", "json"),
         help="Type of report to generate",
         choices=["json", "html", "stdout"],
     )
@@ -192,13 +211,13 @@ def main():
 
     parser.add_argument(
         "--coverage_report_path",
-        default=None,
+        default=os.environ.get("SPECTAGGER_COVERAGE_REPORT_PATH", None),
         help="Path to be provided by the user for where the coverage output report is being generated.",
     )
 
     parser.add_argument(
         "--coverage_library",
-        default=None,
+        default=os.environ.get("SPECTAGGER_COVERAGE_LIBRARY", None),
         help="The specific coverage library to parse a report for.",
         choices=["python.coverage", "ruby.simplecov"],
     )

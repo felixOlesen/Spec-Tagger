@@ -5,6 +5,7 @@ from spec_tagger.spec_review.result_triage import ProblemType, ResultTriage
 
 
 def validate_args(args):
+    """Validates all args for the spec-review sub-command that are passed in by the user"""
     if not args.report_input:
         raise ValueError(f"report_input '{args.report_input}' is none")
     if args.report_input and not Path.is_file(Path(args.report_input)):
@@ -57,6 +58,8 @@ def run(args):
 
 
 def write_findings_markdown(findings):
+    """Write findings markdown saves the rendered results of the findings into
+    a markdown file of the name spectagger_findings.md"""
     md = render(findings)
     with open("spectagger_findings.md", "w") as fh:
         fh.write(md)
@@ -69,8 +72,11 @@ def write_findings_markdown(findings):
 PRIORITY_MIN_CONFIDENCE = 70
 
 
-def render(findings) -> str:
-    """findings: list of {"problem_type": ProblemType, "response": <schema>}"""
+def render(findings: list[dict]) -> str:
+    """findings: list of {"problem_type": ProblemType, "response": <schema>}
+    Render looks through the list of findings post-llm run and constructs a markdown
+    string that presents the LLM findings.
+    """
     # A non-drifted result is a confirmation, not a finding — drop it entirely.
     drifts = []
     changes = []

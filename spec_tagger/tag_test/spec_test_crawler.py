@@ -97,6 +97,7 @@ class Crawler:
             for tag in tags:
                 item_start_line = tag["item_start_line"]
                 if not item_start_line:
+                    item_start_line = tag["line"]
                     print(tag)
                 closing_line = tag["closing_line"]
                 with open(file, "r", encoding="utf-8-sig") as f:
