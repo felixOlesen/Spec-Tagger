@@ -59,7 +59,8 @@ def run(args):
             findings.append(finding)
             ai_controller.parse_response(response, usage_info, cost_usd)
             ai_controller.show_total_session_token_usage()
-            write_findings_markdown(findings)
+
+    write_findings_markdown(findings)
 
 
 def parse_non_ai_findings(solutions: list[Solution]) -> list[dict]:

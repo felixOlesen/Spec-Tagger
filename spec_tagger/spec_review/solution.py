@@ -34,16 +34,28 @@ class Solution:
         self.stdout = stdout
 
     def construct_non_ai_response(self):
-        problem_found = f"A problem of type {self.problem_type} has been found."
-        solution_problem_descr = f"Here is the description of the problem: {self.problem_statement}.\nHere is also a suggested general solution for problems of this type: {self.solution_statement}."
+        problem_found = f"###{self.problem_type} has been found."
+        problems = ""
+        for problem in self.problem_statement:
+            problems += f"\n- {problem}"
+
+        solutions = ""
+        for solution in self.solution_statement:
+            solutions += f"\n- {solution}"
+
+        solution_problem_descr = f"Here is the description of the problem/s: {problems}.\n\nHere is also a suggested general solution for problems of this type: {solutions}."
         tag = ""
         if self.related_tag:
             tag = f"The problem adheres to this relevant tag: {self.related_tag}"
         item = ""
         if self.item:
-            item = f"Here is a list of the relevant item/s related to your problem: {self.item}"
+            item = "Here is a list of the relevant item/s related to your problem: \n"
+            item += "```"
+            for content in self.item:
+                item += content
+            item += "```"
 
-        return f"\n{problem_found}\n{tag}\n{solution_problem_descr}\n\n{item}"
+        return f"\n{problem_found}\n\n{tag}\n\n{solution_problem_descr}\n\n{item}"
 
     def display_data(self):
         print("\n---------------------Next test---------------------")
