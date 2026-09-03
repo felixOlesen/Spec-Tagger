@@ -219,7 +219,8 @@ class Generator:
                     if file.endswith(".json"):
                         file_components = file.split("_cov.json")
                         full_tag = file_components[0]
-                        print(f"json report found: {file}")
+                        if self.verbose:
+                            print(f"json report found: {file}")
 
                         data = json.loads(Path(root, file).read_text())
                         if full_tag not in test_coverage_data:

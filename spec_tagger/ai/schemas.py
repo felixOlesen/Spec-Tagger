@@ -17,11 +17,11 @@ class SemanticDrift(BaseModel):
         ge=0, le=100, description="Certainty in this judgement, 0-100."
     )
     what_prose_claims: str = Field(
-        description="In at most 3 sentences, the behaviour the spec content describes."
+        description="In at most 2 sentences, the behaviour the spec content describes."
     )
     what_test_verifies: str = Field(
         description=(
-            "In at most 3 sentences, the behaviour the test actually asserts. State this "
+            "In at most 2 sentences, the behaviour the test actually asserts. State this "
             "from the assertions themselves and the test content, not just from the test's name. Also make sure to"
             "check the content of the test when available, to see if there's any drift in the process, even if the outcome is the same."
         )

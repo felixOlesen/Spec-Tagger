@@ -77,7 +77,7 @@ class LiteLLMController:
         except ServiceUnavailableError as e:
             print(f"Service Unavailable Error error: {e}")
 
-    def parse_response(self, response, usage_info, cost_usd):
+    def print_response(self, response, usage_info, cost_usd):
         print(f"LLM Response: \n{response}\n")
         print(f"Prompt Tokens: {usage_info.prompt_tokens}\n")
         print(f"Completion Tokens: {usage_info.completion_tokens}\n")

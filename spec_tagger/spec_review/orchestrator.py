@@ -1,5 +1,8 @@
+from json import load
 from pathlib import Path
 import os
+
+from tqdm import tqdm
 from spec_tagger.spec_review.context_aggregator import ContextAggregator
 from spec_tagger.spec_review.result_triage import ProblemType, ResultTriage
 from spec_tagger.spec_review.solution import Solution
@@ -11,6 +14,8 @@ def validate_args(args):
         raise ValueError(f"report_input '{args.report_input}' is none")
     if args.report_input and not Path.is_file(Path(args.report_input)):
         raise ValueError(f"report_iput '{args.report_input}' file does not exist")
+    if not args.src_dir:
+        raise ValueError(f"src_dir '{args.src_dir}' is none")
     if args.src_dir and not Path.is_dir(Path(args.src_dir)):
         raise ValueError(f"src_dir '{args.src_dir}' folder does not exist")
 
@@ -21,6 +26,11 @@ def run(args):
     aggregator = ContextAggregator(args.report_input, args.base, args.head)
     collected_context = aggregator.get_all_context()
     git_global_context = aggregator.git_context_data
+
+    for key, context_item in collected_context["report"].items():
+        print(key)
+        if not context_item:
+            print(key)
     # Classify Problem
     triage = ResultTriage(
         collected_context,
@@ -34,6 +44,8 @@ def run(args):
     )
     solutions = triage.filter_results()
     findings = parse_non_ai_findings(solutions)
+    if findings:
+        print(f"Non-AI Cases Found: {len(findings)}")
     # Construct Prompt OR NO-AI Method
     if not args.no_ai:
         from spec_tagger.ai.prompt_construction import PromptConstructor
@@ -44,8 +56,13 @@ def run(args):
         ai_controller = LiteLLMController(
             args.model_provider, args.model_name, args.rate_limit
         )
+        if prompts:
+            print(f"LLM-Required Cases Discovered in Report: {len(prompts)}")
         for prompt in prompts:
-            prompt.pretty_print_prompt()
+            if args.verbose_review:
+                prompt.pretty_print_prompt()
+            else:
+                print(f"Running prompt with type: {prompt.problem_type}")
             response, usage_info, cost_usd = ai_controller.send_prompt(
                 prompt.schema,
                 prompt.context_evidence,
@@ -55,9 +72,12 @@ def run(args):
                 "problem_type": prompt.problem_type,
                 "response": response,
             }
+            if prompt.problem_type == ProblemType.PASSED_BUT_CHANGED:
+                print(f"Semantic Drift Result: {response.drifted}")
 
             findings.append(finding)
-            ai_controller.parse_response(response, usage_info, cost_usd)
+            if args.verbose_review:
+                ai_controller.print_response(response, usage_info, cost_usd)
             ai_controller.show_total_session_token_usage()
 
     write_findings_markdown(findings)
@@ -82,6 +102,7 @@ def write_findings_markdown(findings):
     md = render(findings)
     with open("spectagger_findings.md", "w") as fh:
         fh.write(md)
+        print("Report written to ./spectagger_findings.md")
 
     if summary := os.environ.get("GITHUB_STEP_SUMMARY"):
         with open(summary, "a") as fh:

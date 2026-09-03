@@ -104,8 +104,6 @@ class Linker:
             return
 
         for test_tag in all_test_tags:
-            if "test_function" not in test_tag:
-                print(test_tag)
             if test_tag["validity"]["valid"] and "ignore" not in test_tag:
                 if test_tag["tag_partial"] not in self.linked_tags:
                     self.register_invalid_tag(

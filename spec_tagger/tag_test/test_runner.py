@@ -5,6 +5,7 @@ import time
 import datetime
 import json
 from pathlib import Path
+from tqdm import tqdm
 
 
 class Runner:
@@ -43,7 +44,7 @@ class Runner:
 
     def build_targets_for_link(self, link: dict) -> list:
         """Joins the test targets together to be injected into the test_command arg in main.py"""
-        # Dedupe and prune within this one spec tag's tests.
+        # De-dupe and prune within this one spec tag's tests.
         targets = []
         seen = set()
         file_level = set()
@@ -53,10 +54,9 @@ class Runner:
                 file_level.add(test_tag["filename"])
 
         for test_tag in link["test_tags"]:
-            # Prune using the tag's own data — no string parsing.
             is_file_target = test_tag.get("test_function") is None
             if not is_file_target and test_tag["filename"] in file_level:
-                continue  # whole file already runs, skip
+                continue
 
             target = self.format_target(test_tag)
             if target not in seen:
@@ -80,9 +80,6 @@ class Runner:
         return cmd
 
     def _reset_simplecov_dir(self) -> None:
-        # Between-tag equivalent of `coverage erase`, since SimpleCov has no CLI for it.
-        # SIMPLECOV_DIR and test_coverage_location are typically the same path ("coverage"),
-        # so recreate it here or the later write of "{tag}_cov.json" fails with FileNotFoundError.
         shutil.rmtree(self.SIMPLECOV_DIR, ignore_errors=True)
         Path(self.SIMPLECOV_DIR).mkdir(parents=True, exist_ok=True)
 
@@ -96,9 +93,6 @@ class Runner:
 
         data = json.loads(result_path.read_text())
 
-        # Two possible shapes:
-        #   coverage.json (simplecov_json_formatter) -> {"meta":…, "coverage": {...}}
-        #   .resultset.json (raw SimpleCov) -> {"<CommandName>": {"coverage": {...}}}
         if "coverage" in data and "meta" in data:
             file_maps = [data["coverage"]]
         else:
@@ -139,13 +133,20 @@ class Runner:
             return
         if self.coverage_library:
             subprocess.run(["mkdir", self.test_coverage_location])
-        for _, link in self.linked_tags.items():
+
+        loading_bar = tqdm(self.linked_tags.items())
+        if self.verbose:
+            loading_bar = self.linked_tags.items()
+
+        for _, link in loading_bar:
             if link["test_tags"]:
                 targets = self.build_targets_for_link(link)
             else:
                 targets = None
 
             tag_str = link["spec_tag"]["full_tag"]
+            if not self.verbose:
+                loading_bar.set_description(f"Running {tag_str}")
 
             if not targets:
                 spec = link["spec_tag"]
@@ -181,7 +182,8 @@ class Runner:
                 subprocess.run(["coverage", "erase"])
             elif self.coverage_library == "ruby.simplecov":
                 self._reset_simplecov_dir()
-            print(f"Running tests for {tag_str} ...")
+            if self.verbose:
+                print(f"Running tests for {tag_str} ...")
             start_time = time.perf_counter()
             res = []
             simplecov_accumulator = {}
@@ -198,7 +200,8 @@ class Runner:
                         "json",
                         "-o",
                         f"{self.test_coverage_location}/{tag_str}_cov.json",
-                    ]
+                    ],
+                    capture_output=True,
                 )
             elif self.coverage_library == "ruby.simplecov":
                 coverage_payload = {

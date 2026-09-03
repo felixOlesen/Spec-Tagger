@@ -94,15 +94,16 @@ def run(args):
         if not framework_exists:
             framework, matches = detect_framework(args.test_framework)
 
-    if not args.test_framework:
+    if not args.test_framework or not framework:
         framework, matches = detect_framework(args.test_command)
+    print(framework)
+    print(matches)
 
     if framework:
         print(f"Framework detected: {framework}, with other matches: {matches}")
     else:
-        print(
-            "Failed to detect test framework, resorting to file-leve test granularity"
-        )
+        print("Failed to detect test framework, exiting")
+        return 1
 
     test_crawler = TestCrawler(
         verbose=args.verbose,

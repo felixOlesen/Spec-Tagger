@@ -10,7 +10,6 @@ import spec_tagger.agent_skill.skill_installer as skill_installer
 
 def main():
     load_dotenv(Path.cwd() / ".env", override=True)
-    print("cwd:", Path.cwd())
     parser = argparse.ArgumentParser()
     sub_parsers = parser.add_subparsers(dest="command")
     skill_parser = sub_parsers.add_parser("install-skill")
@@ -135,6 +134,11 @@ def main():
         "--head",
         default=os.environ.get("SPECREVIEW_GIT_HEAD", None),
         help="Head of the repository that you want to compare your diffs against",
+    )
+    spec_review_parser.add_argument(
+        "--verbose_review",
+        action="store_true",
+        help="Add to command for verbose printing of llm prompt and response.",
     )
     # CORE TOOL ARGS
     parser.add_argument(

@@ -52,25 +52,35 @@ class ResultTriage:
             context_data["git_context"]["changed_files"]
         )
         self.git_context = context_data["git_context"]
-        self.invalid_tags = context_data["report"]["invalid_tags"]
-        self.uncovered_tests_and_files = context_data["report"]["coverage_data"][
-            "tag_coverage"
-        ]
-        self.test_coverage = context_data["report"]["coverage_data"]["test_coverage"]
+        if "invalid_tags" in context_data["report"]:
+            self.invalid_tags = context_data["report"]["invalid_tags"]
+        else:
+            self.invalid_tags = []
+
+        if "coverage_data" in context_data["report"]:
+            self.uncovered_tests_and_files = context_data["report"]["coverage_data"][
+                "tag_coverage"
+            ]
+            self.test_coverage = context_data["report"]["coverage_data"][
+                "test_coverage"
+            ]
+        else:
+            self.uncovered_tests_and_files = {}
+            self.test_coverage = {}
+
         self.test_failures = []
         self.test_passes = []
-        for tag, info in context_data["report"]["test_results"].items():
-            failure_presence = False
-            for result in info["results"]:
-                if result["outcome"] == "failed":
-                    failure_presence = True
-                    break
-            if failure_presence:
-                self.test_failures.append({"tag": tag, "result": info})
-                print(tag)
-            else:
-                self.test_passes.append({"tag": tag, "result": info})
-                print(tag)
+        if "test_results" in context_data["report"]:
+            for tag, info in context_data["report"]["test_results"].items():
+                failure_presence = False
+                for result in info["results"]:
+                    if result["outcome"] == "failed":
+                        failure_presence = True
+                        break
+                if failure_presence:
+                    self.test_failures.append({"tag": tag, "result": info})
+                else:
+                    self.test_passes.append({"tag": tag, "result": info})
 
         self.solutions = []
         self.semantic_drift_included = semantic_drift_included
@@ -78,8 +88,8 @@ class ResultTriage:
         self.unlinked_tests_included = unlinked_tests_included
         self.invalid_tags_included = invalid_tags_included
         self.entire_diff_included = entire_diff_included
-        self.src_dir = src_dir
         self.uncovered_implementation_included = uncovered_implementation_included
+        self.src_dir = src_dir
 
     def _print_keys(self, data_dict: dict, name: str, value_also: bool = False):
 
@@ -393,7 +403,6 @@ class ResultTriage:
         spec_tag = test_result["spec_tag"]
         all_tags = [spec_tag, *test_result["test_tags"]]
         files = {tag["filename"] for tag in all_tags}
-        print(files)
         relevant_files = files.intersection(self.git_context["changed_files"])
         if len(relevant_files) > 0:
             spec_content = spec_tag["content"]
