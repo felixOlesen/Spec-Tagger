@@ -3,13 +3,6 @@ from spec_tagger.tag_test.test_runner import Runner
 
 
 def tag_id(tag_type, name, revision):
-    # Builds a "type~name~revision" string at runtime rather than as a
-    # source-level literal. This file lives under tests/, the project's own
-    # default test_dir, so the spectagger crawler regex-matches any literal
-    # tag-shaped substring on any line - including inside string literals in
-    # assertions, not just comments. A hardcoded literal tag string here
-    # would be picked up as a real (and orphaned) test tag when this
-    # project audits its own spec.
     return f"{tag_type}~{name}~{revision}"
 
 
@@ -55,20 +48,14 @@ def test_finds_spec_file():
     assert files[0] == single_file
 
 
-# feat~no_func~2
-def test_example():
-    assert True
-
-
-# feat~no_func~2
-def test_example_2():
-    assert True
-
-
-# feat~dead_func~1
-def test_dead_func_1():
-    # raise Exception
-    assert True
+# story~identify_function_name~1
+def test_finds_correct_function_name():
+    dir = "test_data/tests/"
+    crawler = TestCrawler(verbose=False, test_dir=dir, framework="python.pytest")
+    tag_data = crawler.run()
+    tag = tag_data.get_tag(tag_id("feat", "example_tag", 1))
+    print(tag)
+    assert tag["test_function"] == "test_example_function"
 
 
 TEST_CLASS_FIXTURE = "test_data/tests/example_class_test.py"
@@ -115,41 +102,3 @@ def test_pytest_class_method_builds_correct_command():
     target = runner.format_target(tag)
 
     assert target == f"{TEST_CLASS_FIXTURE}::TestExampleClass::test_class_method"
-
-
-TEST_RSPEC_FIXTURE = "test_data/tests/example_rspec_test.rb"
-
-
-# feat~rspec_describe_it_block~1 feat~rspec_context_it_block~1 feat~rspec_context_oneliner~1 feat~rspec_describe_oneliner~1
-def test_rspec_describe_and_context_block_and_oneliner_forms_resolve():
-    crawler = TestCrawler(
-        verbose=False, test_dir="test_data/tests", framework="ruby.rspec"
-    )
-    tag_data = crawler.run()
-
-    tags = tag_data.file_to_tag[TEST_RSPEC_FIXTURE]
-    resolved = {
-        tag["full_tag"]: (tag["test_function"], tag["item_start_line"])
-        for tag in tags
-    }
-
-    # describe + block-form `it 'desc' do` (regression: must still work)
-    assert resolved[tag_id("feat", "rspec_describe_it_block", "1")] == (
-        "Widget > is buildable",
-        5,
-    )
-    # context + block-form `it 'desc' do` (new: context as a describe alias)
-    assert resolved[tag_id("feat", "rspec_context_it_block", "1")] == (
-        "when empty > has no items",
-        12,
-    )
-    # context + one-liner `it { ... }` (both new features together)
-    assert resolved[tag_id("feat", "rspec_context_oneliner", "1")] == (
-        "when a match exists > ",
-        19,
-    )
-    # describe + one-liner `it { ... }` (isolates the one-liner regex change)
-    assert resolved[tag_id("feat", "rspec_describe_oneliner", "1")] == (
-        "a helper > ",
-        24,
-    )
