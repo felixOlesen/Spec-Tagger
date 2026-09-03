@@ -38,15 +38,16 @@ class ResultTriage:
         self,
         context_data: dict,
         src_dir: str,
-        ai_enabled: bool = True,
+        no_ai: bool = False,
         semantic_drift_included: bool = True,
-        failure_diagnostic_included: bool = True,
-        tag_suggestion_included: bool = True,
+        failed_tests_included: bool = True,
+        unlinked_tests_included: bool = True,
         invalid_tags_included: bool = True,
-        entire_diff_included: bool = False,
+        entire_diff_included: bool = True,
+        uncovered_implementation_included: bool = True,
     ):
         self.context_data = context_data
-        self.ai_enabled = ai_enabled
+        self.no_ai = no_ai
         context_data["git_context"]["changed_files"] = set(
             context_data["git_context"]["changed_files"]
         )
@@ -70,19 +71,15 @@ class ResultTriage:
             else:
                 self.test_passes.append({"tag": tag, "result": info})
                 print(tag)
-        # self._print_keys(self.git_context, "Git Context", True)
-        self._print_keys(
-            self.uncovered_tests_and_files, "Un-Covered Tests and Files", True
-        )
-        self._print_keys(self.test_coverage, "Test Coverage")
 
         self.solutions = []
         self.semantic_drift_included = semantic_drift_included
-        self.failure_diagnostic_included = failure_diagnostic_included
-        self.tag_suggestion_included = tag_suggestion_included
+        self.failed_tests_included = failed_tests_included
+        self.unlinked_tests_included = unlinked_tests_included
         self.invalid_tags_included = invalid_tags_included
         self.entire_diff_included = entire_diff_included
         self.src_dir = src_dir
+        self.uncovered_implementation_included = uncovered_implementation_included
 
     def _print_keys(self, data_dict: dict, name: str, value_also: bool = False):
 
@@ -98,16 +95,17 @@ class ResultTriage:
         if self.invalid_tags_included:
             self._triage_invalid_tags()
         # Missed Tests and Files
-        if self.tag_suggestion_included:
+        if self.unlinked_tests_included:
             self._triage_missed_tests_and_files()
         # Failed Tests
-        if self.failure_diagnostic_included:
+        if self.failed_tests_included:
             self._triage_failed_tests()
         # Passed Tests
         if self.semantic_drift_included:
             self._triage_passed_but_changed_tests()
-
-        self._triage_uncovered_implementation_changes()
+        # Uncovered implementation changes
+        if self.uncovered_implementation_included:
+            self._triage_uncovered_implementation_changes()
 
         return self.solutions
 
@@ -125,7 +123,7 @@ class ResultTriage:
                 solution_statement=[
                     SolutionMessages.UNCOVERED_IMPLEMENTATION_CHANGE.value
                 ],
-                ai_enabled=self.ai_enabled,
+                ai_enabled=(not self.no_ai),
                 ai_usage_recommended=True,
             )
             self.solutions.append(solution)
@@ -156,7 +154,7 @@ class ResultTriage:
                     solution_statement=[
                         SolutionMessages.UNCOVERED_IMPLEMENTATION_CHANGE.value
                     ],
-                    ai_enabled=self.ai_enabled,
+                    ai_enabled=(not self.no_ai),
                     ai_usage_recommended=True,
                 )
                 self.solutions.append(solution)
@@ -189,7 +187,7 @@ class ResultTriage:
                     solution_statement=[
                         SolutionMessages.UNCOVERED_IMPLEMENTATION_CHANGE.value
                     ],
-                    ai_enabled=self.ai_enabled,
+                    ai_enabled=(not self.no_ai),
                     ai_usage_recommended=True,
                 )
                 self.solutions.append(solution)
@@ -199,8 +197,6 @@ class ResultTriage:
         coverage_filter = CoverageFilter(self.test_coverage)
         changed_files = self.context_data["git_context"]["changed_files"]
         covered_files = coverage_filter.file_to_covered_lines.keys()
-        print(f"COVERED FILES: {covered_files}")
-        print(f"CHANGED FILES: {changed_files}")
         diff_file_to_lines = git_context.changed_lines_from_diff(
             self.git_context["base"], self.git_context["head"]
         )
@@ -245,7 +241,7 @@ class ResultTriage:
                     problem_type=ProblemType.INVALID_TAG,
                     problem_statement=[],
                     solution_statement=[],
-                    ai_enabled=self.ai_enabled,
+                    ai_enabled=(not self.no_ai),
                     ai_usage_recommended=False,
                 )
                 for reason in invalid["validity"]["reasons"]:
@@ -292,8 +288,8 @@ class ResultTriage:
                     problem_type=ProblemType.MISSED_FILE,
                     problem_statement=[ProblemType.MISSED_FILE.value],
                     solution_statement=[SolutionMessages.UNCOVERED_FILE.value],
-                    ai_enabled=self.ai_enabled,
-                    ai_usage_recommended=True,
+                    ai_enabled=(not self.no_ai),
+                    ai_usage_recommended=False,
                 )
                 self.solutions.append(solution)
         if self.uncovered_tests_and_files["tests"]:
@@ -312,8 +308,8 @@ class ResultTriage:
                     problem_type=ProblemType.MISSED_TEST,
                     problem_statement=[ProblemType.MISSED_TEST.value],
                     solution_statement=[SolutionMessages.UNCOVERED_TEST.value],
-                    ai_enabled=self.ai_enabled,
-                    ai_usage_recommended=True,
+                    ai_enabled=(not self.no_ai),
+                    ai_usage_recommended=False,
                 )
                 self.solutions.append(solution)
 
@@ -340,8 +336,8 @@ class ResultTriage:
                         problem_type=ProblemType.TEST_ERROR,
                         problem_statement=[ProblemType.TEST_ERROR.value],
                         solution_statement=[SolutionMessages.ERROR_TEST.value],
-                        ai_enabled=self.ai_enabled,
-                        ai_usage_recommended=True,
+                        ai_enabled=(not self.no_ai),
+                        ai_usage_recommended=False,
                         stdout=test_fail["result"]["error"],
                     )
                     self.solutions.append(solution)
@@ -356,8 +352,8 @@ class ResultTriage:
                         problem_type=ProblemType.TEST_FAILURE,
                         problem_statement=[ProblemType.TEST_FAILURE.value],
                         solution_statement=[SolutionMessages.FAILED_TEST.value],
-                        ai_enabled=self.ai_enabled,
-                        ai_usage_recommended=True,
+                        ai_enabled=(not self.no_ai),
+                        ai_usage_recommended=False,
                         stdout=test_fail["result"]["output"],
                     )
                     self.solutions.append(solution)
@@ -386,7 +382,7 @@ class ResultTriage:
                     problem_type=ProblemType.PASSED_BUT_CHANGED,
                     problem_statement=[ProblemType.PASSED_BUT_CHANGED.value],
                     solution_statement=[SolutionMessages.PASSED_BUT_CHANGED.value],
-                    ai_enabled=self.ai_enabled,
+                    ai_enabled=(not self.no_ai),
                     ai_usage_recommended=True,
                     stdout=None,
                 )
@@ -399,10 +395,6 @@ class ResultTriage:
         files = {tag["filename"] for tag in all_tags}
         print(files)
         relevant_files = files.intersection(self.git_context["changed_files"])
-        print(self.git_context["changed_files"])
-        print(
-            "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-        )
         if len(relevant_files) > 0:
             spec_content = spec_tag["content"]
             diff_string = "Diffs for Connected Files:\n"
@@ -448,35 +440,3 @@ class ResultTriage:
             related_files += f"{test_file}:{test_line}\n"
             item_contents += f"Test Function: {test_tag['test_function']} Contents: \n {test_tag['content']}\n"
         return diff_string, commit_messages, related_files, item_contents
-
-    # Invalid Tag Handling
-    # - All that's needed is the tag data and the item
-
-    # Missing File / Test Handling
-    # - All that's needed is the file names and test function names
-
-    # Test Error/Failure Handling
-    # - Get the output of the test
-    # - Get the content of the test data
-    # - Get the content of the spec item
-    # - Get the diff of the related file
-
-    # Change Analysis:
-    #
-    #
-    #
-    # Compare Changed files to their respective passing tests.
-    # if a test has passed, BUT any of the respecitve files in the spec or test files have changed
-    #   - Push it through to an AI check
-    #
-    #
-    # Has a spec file changed?
-    #
-    #
-    #
-    # Has a test file changed?
-    #
-    #
-    #
-    #
-    # Has a code file changed and do the tests cover it?

@@ -52,7 +52,7 @@ class TagData:
             reason = [Invalidities.TAG_REVISION_MISMATCH]
 
         if tag_type == "feat" or tag_type == "story":
-            closing_line = line + 10
+            closing_line = line + 30
         elif tag_type == "step":
             closing_line = line
 
@@ -126,6 +126,7 @@ class SpecTagData(TagData):
         super().__init__()
 
     def update_item_closing_lines(self):
+        CLOSING_LINE_OFFSET = 30
         if len(self.features) > 1:
             for i in range(len(self.features) - 1):
                 feature = self.features[i]
@@ -135,9 +136,13 @@ class SpecTagData(TagData):
                 else:
                     feature["closing_line"] = None
                 if i == len(self.features) - 2:
-                    next_feature["closing_line"] = None
+                    next_feature["closing_line"] = (
+                        next_feature["line"] + CLOSING_LINE_OFFSET
+                    )
         elif len(self.features) == 1:
-            self.features[0]["closing_line"] = None
+            self.features[0]["closing_line"] = (
+                self.features[0]["line"] + CLOSING_LINE_OFFSET
+            )
 
         if len(self.stories) > 1:
             for i in range(len(self.stories) - 1):
@@ -148,9 +153,13 @@ class SpecTagData(TagData):
                 else:
                     story["closing_line"] = None
                 if i == len(self.stories) - 2:
-                    next_story["closing_line"] = None
+                    next_story["closing_line"] = (
+                        next_story["line"] + CLOSING_LINE_OFFSET
+                    )
         elif len(self.stories) == 1:
-            self.stories[0]["closing_line"] = None
+            self.stories[0]["closing_line"] = (
+                self.stories[0]["line"] + CLOSING_LINE_OFFSET
+            )
 
     def identify_duplicates(self, target_tag=None):
         all_tags = self.get_all_tags()
@@ -181,11 +190,12 @@ class TestTagData(TagData):
         super().__init__()
 
     def update_item_closing_lines(self):
+        CLOSING_LINE_OFFSET = 30
         for _, tags in self.file_to_tag.items():
             same_line_stack = []
             for index, tag in enumerate(tags):
                 if index == (len(tags) - 1):
-                    tag["closing_line"] = None
+                    tag["closing_line"] = tag["line"] + CLOSING_LINE_OFFSET
                 else:
                     next_tag = tags[index + 1]
                     if next_tag["line"] == tag["line"]:

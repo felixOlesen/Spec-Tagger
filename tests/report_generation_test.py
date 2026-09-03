@@ -189,6 +189,42 @@ def test_simplecov_reports_are_parsed_per_tag(tmp_path):
     assert file_coverage["missing_lines"] == [2]
 
 
+def test_simplecov_container_paths_are_normalised_via_container_root(tmp_path):
+    # Simulates coverage recorded inside a Docker container (e.g. bind-mounted
+    # to /app) while spectagger itself runs on the host under tmp_path - the
+    # two absolute path trees share no common ancestor except "/".
+    coverage_dir = tmp_path / "coverage"
+    coverage_dir.mkdir()
+    tag = tag_id("feat", "example", 1)
+
+    abs_path = "/app/src/example.rb"
+    coverage_report = {
+        "meta": {"spectagger_merged": True},
+        "coverage": {
+            abs_path: {"lines": [1, 0, None, 2]},
+        },
+    }
+    (coverage_dir / f"{tag}_cov.json").write_text(json.dumps(coverage_report))
+
+    links = {"feat~example": make_link(tag)}
+    test_output = {tag: make_test_result(test_count=1, pass_count=1)}
+
+    generator = make_generator(
+        tmp_path,
+        successful_links=links,
+        test_output=test_output,
+        test_coverage_location=str(coverage_dir),
+        test_coverage_library="ruby.simplecov",
+        coverage_container_root="/app",
+    )
+    generator.repo_root = str(tmp_path)  # unrelated host cwd; must be ignored
+    generator._construct_report_object()
+
+    coverage_data = generator.output_object["coverage_data"]["test_coverage"][tag]
+    assert "src/example.rb" in coverage_data
+    assert not any(".." in key for key in coverage_data)
+
+
 # confidence: 90
 # story~json_report_written_to_disk~1
 def test_json_report_written_to_disk(tmp_path):

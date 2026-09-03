@@ -115,3 +115,41 @@ def test_pytest_class_method_builds_correct_command():
     target = runner.format_target(tag)
 
     assert target == f"{TEST_CLASS_FIXTURE}::TestExampleClass::test_class_method"
+
+
+TEST_RSPEC_FIXTURE = "test_data/tests/example_rspec_test.rb"
+
+
+# feat~rspec_describe_it_block~1 feat~rspec_context_it_block~1 feat~rspec_context_oneliner~1 feat~rspec_describe_oneliner~1
+def test_rspec_describe_and_context_block_and_oneliner_forms_resolve():
+    crawler = TestCrawler(
+        verbose=False, test_dir="test_data/tests", framework="ruby.rspec"
+    )
+    tag_data = crawler.run()
+
+    tags = tag_data.file_to_tag[TEST_RSPEC_FIXTURE]
+    resolved = {
+        tag["full_tag"]: (tag["test_function"], tag["item_start_line"])
+        for tag in tags
+    }
+
+    # describe + block-form `it 'desc' do` (regression: must still work)
+    assert resolved[tag_id("feat", "rspec_describe_it_block", "1")] == (
+        "Widget > is buildable",
+        5,
+    )
+    # context + block-form `it 'desc' do` (new: context as a describe alias)
+    assert resolved[tag_id("feat", "rspec_context_it_block", "1")] == (
+        "when empty > has no items",
+        12,
+    )
+    # context + one-liner `it { ... }` (both new features together)
+    assert resolved[tag_id("feat", "rspec_context_oneliner", "1")] == (
+        "when a match exists > ",
+        19,
+    )
+    # describe + one-liner `it { ... }` (isolates the one-liner regex change)
+    assert resolved[tag_id("feat", "rspec_describe_oneliner", "1")] == (
+        "a helper > ",
+        24,
+    )

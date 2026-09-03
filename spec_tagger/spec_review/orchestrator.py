@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 from spec_tagger.spec_review.context_aggregator import ContextAggregator
 from spec_tagger.spec_review.result_triage import ProblemType, ResultTriage
+from spec_tagger.spec_review.solution import Solution
 
 
 def validate_args(args):
@@ -21,10 +22,18 @@ def run(args):
     collected_context = aggregator.get_all_context()
     git_global_context = aggregator.git_context_data
     # Classify Problem
-    triage = ResultTriage(collected_context, args.src_dir)
+    triage = ResultTriage(
+        collected_context,
+        args.src_dir,
+        no_ai=args.no_ai,
+        semantic_drift_included=args.include_semantic_drift_review,
+        unlinked_tests_included=args.include_unlinked_tests_in_report,
+        failed_tests_included=args.include_failed_tests_in_report,
+        invalid_tags_included=args.include_invalid_tags_in_report,
+        uncovered_implementation_included=args.include_uncovered_implementation_review,
+    )
     solutions = triage.filter_results()
-    for solution in solutions:
-        solution.display_data()
+    findings = parse_non_ai_findings(solutions)
     # Construct Prompt OR NO-AI Method
     if not args.no_ai:
         from spec_tagger.ai.prompt_construction import PromptConstructor
@@ -35,7 +44,6 @@ def run(args):
         ai_controller = LiteLLMController(
             args.model_provider, args.model_name, args.rate_limit
         )
-        findings = []
         for prompt in prompts:
             prompt.pretty_print_prompt()
             response, usage_info, cost_usd = ai_controller.send_prompt(
@@ -53,8 +61,18 @@ def run(args):
             ai_controller.show_total_session_token_usage()
             write_findings_markdown(findings)
 
-    # Prepare output suggestion
-    # Feed into workflow for PR OR Print to STDOUT
+
+def parse_non_ai_findings(solutions: list[Solution]) -> list[dict]:
+    result = []
+    for solution in solutions:
+        if not solution.ai_usage_recommended:
+            result.append(
+                {
+                    "problem_type": solution.problem_type,
+                    "response": solution.construct_non_ai_response(),
+                }
+            )
+    return result
 
 
 def write_findings_markdown(findings):
@@ -69,17 +87,14 @@ def write_findings_markdown(findings):
             fh.write(md + "\n")
 
 
-PRIORITY_MIN_CONFIDENCE = 70
-
-
 def render(findings: list[dict]) -> str:
-    """findings: list of {"problem_type": ProblemType, "response": <schema>}
-    Render looks through the list of findings post-llm run and constructs a markdown
+    """Render looks through the list of findings post-llm run and constructs a markdown
     string that presents the LLM findings.
     """
-    # A non-drifted result is a confirmation, not a finding — drop it entirely.
+    PRIORITY_MIN_CONFIDENCE = 70
     drifts = []
     changes = []
+    non_ai_suggestions = []
     for finding in findings:
         if finding["problem_type"] == ProblemType.IMPLEMENTATION_CHANGE_NOT_COVERED:
             changes.append(finding["response"])
@@ -88,20 +103,26 @@ def render(findings: list[dict]) -> str:
             and finding["response"].drifted
         ):
             drifts.append(finding["response"])
+        elif finding["problem_type"] in (
+            ProblemType.INVALID_TAG,
+            ProblemType.TEST_FAILURE,
+            ProblemType.TEST_ERROR,
+            ProblemType.MISSED_FILE,
+            ProblemType.MISSED_TEST,
+        ):
+            non_ai_suggestions.append(finding)
 
-    # Only behavioural changes are genuine gaps; internal/cosmetic are noise.
     priority_changes = [
-        c
-        for c in changes
-        if c.significance == "behavioural"
-        and c.coverage_state in ("uncovered", "spec_only")
-        and c.confidence >= PRIORITY_MIN_CONFIDENCE
+        change
+        for change in changes
+        if change.significance == "behavioural"
+        and change.confidence >= PRIORITY_MIN_CONFIDENCE
     ]
     priority_drifts = [d for d in drifts if d.confidence >= PRIORITY_MIN_CONFIDENCE]
     rest_changes = [c for c in changes if c not in priority_changes]
     rest_drifts = [d for d in drifts if d not in priority_drifts]
 
-    out = ["## Spec review", ""]
+    out = ["", "## Spec review", ""]
 
     if not priority_drifts and not priority_changes:
         out += [
@@ -111,40 +132,41 @@ def render(findings: list[dict]) -> str:
 
     if priority_drifts:
         out += [f"### Semantic drift ({len(priority_drifts)})", ""]
-        for d in priority_drifts:
+        for drift in priority_drifts:
             out += [
-                f"**Confidence {d.confidence}**",
+                f"**Confidence {drift.confidence}**",
                 "",
-                f"- Spec claims: {d.what_prose_claims}",
-                f"- Test verifies: {d.what_test_verifies}",
+                f"- Spec describes: {drift.what_prose_claims}",
+                f"- Test describes: {drift.what_test_verifies}",
                 "",
-                d.reasoning,
+                drift.reasoning,
                 "",
             ]
-            if d.suggested_change:
-                out += ["Suggested change:", "", "```", d.suggested_change, "```", ""]
+            if drift.suggested_change:
+                out += [
+                    "Suggested change:",
+                    "",
+                    "```",
+                    drift.suggested_change,
+                    "```",
+                    "",
+                ]
 
     if priority_changes:
         out += [f"### Uncovered behavioural changes ({len(priority_changes)})", ""]
-        for c in priority_changes:
-            files = ", ".join(f"`{f}`" for f in c.files)
+        for change in priority_changes:
+            files = ", ".join(f"`{f}`" for f in change.files)
             out += [
-                f"**{c.behaviour}** · confidence {c.confidence}",
-                f"{files} — {c.coverage_state.replace('_', ' ')}",
+                f"**{change.behaviour}** · confidence {change.confidence}",
+                f"{files}",
                 "",
             ]
-            if c.matches_stated_intent is False:
-                out += [
-                    "> Not mentioned in any commit message or the PR "
-                    "description — worth confirming this was intended.",
-                    "",
-                ]
-            if c.suggested_spec:
-                out += ["Suggested spec item:", "", f"> {c.suggested_spec}", ""]
-            if c.suggested_test:
-                out += ["Suggested test:", "", "```", c.suggested_test, "```", ""]
-            if c.evidence:
-                snippet = "\n".join(l for l in c.evidence if l.strip())
+            if change.suggested_spec:
+                out += ["Suggested spec item:", "", f"> {change.suggested_spec}", ""]
+            if change.suggested_test:
+                out += ["Suggested test:", "", "```", change.suggested_test, "```", ""]
+            if change.evidence:
+                snippet = "\n".join(l for l in change.evidence if l.strip())
                 out += [
                     "<details><summary>Evidence</summary>",
                     "",
@@ -162,16 +184,19 @@ def render(findings: list[dict]) -> str:
             "<details>",
             f"<summary>Other findings ({rest_total})</summary>",
             "",
-        ]  # blank line required
-        for d in rest_drifts:
+        ]
+        for drift in rest_drifts:
+            out.append(f"- **Semantic drift**, confidence {drift.confidence}")
+        for change in rest_changes:
             out.append(
-                f"- **Semantic drift** — possible drift, confidence {d.confidence}"
-            )
-        for c in rest_changes:
-            out.append(
-                f"- **{c.behaviour}** — {c.significance}, "
-                f"{c.coverage_state.replace('_', ' ')}, confidence {c.confidence}"
+                f"- **{change.behaviour}** — {change.significance}, "
+                f"confidence {change.confidence}"
             )
         out += ["", "</details>"]
+
+    if non_ai_suggestions:
+        out += ["", "## Non-Ai Suggestions", ""]
+        for suggestion in non_ai_suggestions:
+            out += ["", f"{suggestion['response']}", ""]
 
     return "\n".join(out)

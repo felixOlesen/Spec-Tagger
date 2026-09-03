@@ -81,7 +81,10 @@ class Runner:
 
     def _reset_simplecov_dir(self) -> None:
         # Between-tag equivalent of `coverage erase`, since SimpleCov has no CLI for it.
+        # SIMPLECOV_DIR and test_coverage_location are typically the same path ("coverage"),
+        # so recreate it here or the later write of "{tag}_cov.json" fails with FileNotFoundError.
         shutil.rmtree(self.SIMPLECOV_DIR, ignore_errors=True)
+        Path(self.SIMPLECOV_DIR).mkdir(parents=True, exist_ok=True)
 
     def _read_simplecov_result(self) -> dict[str, list]:
         """Parses simplecov coverage report"""

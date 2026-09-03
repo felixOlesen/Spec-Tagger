@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from spec_tagger.tag_test.spec_test_linker import Linker
 from spec_tagger.tag_test.test_runner import Runner
 from spec_tagger.tag_test.report_generation import Generator
@@ -33,9 +34,9 @@ def validate_args(args):
         and not os.path.isdir(args.report_output)
         and (args.report_type == "html" or args.report_type == "json")
     ):
-        raise ValueError(
-            f"report_output '{args.report_output}' is not a valid directory"
-        )
+        print(f"WARNING: report_output not found {args.report_output}, creating one")
+        out = Path(args.report_output)
+        out.mkdir(parents=True, exist_ok=True)
 
     tag_regex = re.compile(TAG_PATTERN)
     if args.target_tag:
@@ -175,6 +176,7 @@ def run(args):
             tag_coverage_data=tag_coverage_data,
             test_coverage_location=args.coverage_report_path,
             test_coverage_library=args.coverage_library,
+            coverage_container_root=args.coverage_container_root,
             verbose=args.verbose,
         )
         generator.generate_report()

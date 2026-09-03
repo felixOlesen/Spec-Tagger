@@ -98,7 +98,6 @@ class Crawler:
                 item_start_line = tag["item_start_line"]
                 if not item_start_line:
                     item_start_line = tag["line"]
-                    print(tag)
                 closing_line = tag["closing_line"]
                 with open(file, "r", encoding="utf-8-sig") as f:
                     lines = f.readlines()
@@ -235,7 +234,7 @@ class TestCrawler(Crawler):
                     if describe_pattern and example_pattern:
                         m = example_pattern.match(line)
                         if m:
-                            desc = m.group(1)
+                            desc = m.group(1) or ""
                             path = self._enclosing_path(
                                 lines, start + offset, describe_pattern
                             )
@@ -257,11 +256,9 @@ class TestCrawler(Crawler):
                                     found = "::".join(class_path + [found])
                             break
                     break
-
                 tag["test_function"] = found  # None means invalid tag
                 tag["item_start_line"] = found_at
                 line_cache[tag["line"]] = (found, found_at)
-
                 if tag["test_function"] in self.test_declarations[filename]:
                     print(
                         "Warning, duplicate function names found when extracting test functions"
@@ -329,7 +326,7 @@ class TestCrawler(Crawler):
                 if describe_pattern and example_pattern:
                     m = example_pattern.match(line)
                     if m:
-                        desc = m.group(1)
+                        desc = m.group(1) or ""
                         path = self._enclosing_path(
                             lines, start + line_num, describe_pattern
                         )

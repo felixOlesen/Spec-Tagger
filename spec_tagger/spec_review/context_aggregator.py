@@ -40,12 +40,4 @@ class ContextAggregator:
         if not self.git_context_data:
             print("Warning, no git context data was found")
 
-        if self.report_data:
-            for key, _ in self.report_data.items():
-                print(key)
-
-        if self.git_context_data:
-            for key, _ in self.git_context_data.items():
-                print(key)
-
         return {"report": self.report_data, "git_context": self.git_context_data}

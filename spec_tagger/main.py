@@ -1,6 +1,7 @@
 import argparse
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 from spec_tagger.merge_analysis import orchestrator as merge_analysis_orchestrator
 from spec_tagger.tag_test import orchestrator as tag_test_orchestrator
 from spec_tagger.spec_review import orchestrator as review_orchestrator
@@ -8,8 +9,8 @@ import spec_tagger.agent_skill.skill_installer as skill_installer
 
 
 def main():
-    load_dotenv()
-
+    load_dotenv(Path.cwd() / ".env", override=True)
+    print("cwd:", Path.cwd())
     parser = argparse.ArgumentParser()
     sub_parsers = parser.add_subparsers(dest="command")
     skill_parser = sub_parsers.add_parser("install-skill")
@@ -96,18 +97,23 @@ def main():
         action="store_true",
     )
     spec_review_parser.add_argument(
-        "--include_failure_diagnostic_review",
+        "--include_failed_tests_in_report",
         help="Tells the tool, that you want to specifically include reviews for improvements to either the spec, the tests or the implementation code in the case that any related tests fail, if no specific review is requested, all will be run.",
         action="store_true",
     )
     spec_review_parser.add_argument(
-        "--include_tag_suggestion_review",
+        "--include_unlinked_tests_in_report",
         help="Tells the tool, that you want to specifically include new tag suggestions for un-tagged test files and test cases, if no specific review is requested, all will be run.",
         action="store_true",
     )
     spec_review_parser.add_argument(
-        "--include_invalid_tag_review",
+        "--include_invalid_tags_in_report",
         help="Tells the tool, that you want to specifically include the review of cases of invalid tags, if no specific review is requested, all will be run.",
+        action="store_true",
+    )
+    spec_review_parser.add_argument(
+        "--include_uncovered_implementation_review",
+        help="Tells the tool, that you want to include a review of the un-covered implementation changes in your repo.",
         action="store_true",
     )
     spec_review_parser.add_argument(
@@ -159,8 +165,8 @@ def main():
     )
     parser.add_argument(
         "--test_command",
-        help="Command to run the test, example: 'pytest {tests}'",
         default=os.environ.get("SPECTAGGER_TEST_COMMAND", None),
+        help="Command to run the test, example: 'pytest {tests}'",
     )
     parser.add_argument(
         "--test_format",
@@ -172,7 +178,6 @@ def main():
         default=os.environ.get("SPECTAGGER_TEST_FRAMEWORK", None),
         help="Providing a test framework string will override the detection function for a minor speed up, if no framework is found, the tool will resort to file-based testing",
     )
-
     parser.add_argument(
         "--one_by_one",
         action="store_true",
@@ -220,6 +225,15 @@ def main():
         default=os.environ.get("SPECTAGGER_COVERAGE_LIBRARY", None),
         help="The specific coverage library to parse a report for.",
         choices=["python.coverage", "ruby.simplecov"],
+    )
+
+    parser.add_argument(
+        "--coverage_container_root",
+        default=os.environ.get("SPECTAGGER_COVERAGE_CONTAINER_ROOT", None),
+        help="Absolute path prefix under which the coverage tool sees the repo "
+        "(e.g. a Docker bind-mount target like /app), if different from where "
+        "spectagger itself runs. Used to normalise absolute paths recorded by "
+        "tools like SimpleCov that don't already write repo-relative paths.",
     )
 
     args = parser.parse_args()

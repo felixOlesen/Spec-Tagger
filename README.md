@@ -97,7 +97,7 @@ Currently registered:
 | --------------- | ---------------------------- | ---------------------------------------- | --------------------------------- |
 | `python.pytest` | `.py`                        | function name (`test...`), class-qualified when nested in a `class` (`Class::test...`) | `pytest` in the command            |
 | `ruby.minitest` | `.rb`                         | function name (`test_...`)               | `ruby ... -Itest` / `minitest`     |
-| `ruby.rspec`    | `.rb`                         | `describe`/`it` description path         | `rspec` in the command             |
+| `ruby.rspec`    | `.rb`                         | `describe`/`context`/`it`/`specify` description path (one-liner `it { }`/`specify { }` supported) | `rspec` in the command             |
 | `js.jest`       | `.js`, `.ts`, `.jsx`, `.tsx`  | `describe`/`it`/`test` description path  | `jest` in the command              |
 
 ### Example: matching your test framework
@@ -216,7 +216,7 @@ Tag extraction is pure text/regex matching, so tags are recognized in _any_ file
 After finding a tag in a test file, the `TestCrawler` looks at the following lines (up to 20, `LINE_STOP_CONDITION`) to identify which test the tag belongs to, skipping blank lines and lines matching the framework's `skip_prefixes` (comments/decorators). How it resolves depends on the framework's style, both defined per-entry in `FRAMEWORKS` (in [`spec_tagger/language_patterns.py`](spec_tagger/language_patterns.py)):
 
 - **Function-name frameworks** (`python.pytest`, `ruby.minitest`) — a `func` regex matches the test's `def`, capturing its name directly.
-- **Block/description frameworks** (`ruby.rspec`, `js.jest`) — there's no unique function name, so a `describe`/`example` pair of regexes is used instead: the crawler finds the enclosing `it`/`test`/`example` line below the tag, then walks upward through enclosing `describe` blocks using indentation as the nesting signal, joining their descriptions together (e.g. `"Cart > Discounts > applies percentage off"`).
+- **Block/description frameworks** (`ruby.rspec`, `js.jest`) — there's no unique function name, so a `describe`/`example` pair of regexes is used instead: the crawler finds the enclosing `it`/`test`/`example` line below the tag, then walks upward through enclosing `describe` blocks using indentation as the nesting signal, joining their descriptions together (e.g. `"Cart > Discounts > applies percentage off"`). For `ruby.rspec`, `context` is treated as an alias for `describe`, and `it`/`specify` match both the block form (`it 'text' do ... end`) and RSpec's one-liner form (`it { matcher }`, which has no description and contributes an empty segment to the joined path). Any other, non-blank, non-comment line between the tag and its example — a `context`/`describe` aside — still stops the search, so setup lines like `let`/`before` must not sit between a tag and the example it's meant to bind to.
 
 For extensions not covered by the detected (or overridden) framework — or when no framework is detected at all — every tag in that file resolves to the whole file as the test target, rather than a specific function or example, i.e. file-level granularity.
 

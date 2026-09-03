@@ -6,13 +6,11 @@ from litellm.exceptions import (
     APIConnectionError,
     ServiceUnavailableError,
 )
-from dotenv import load_dotenv
 import json
 
 
 class LiteLLMController:
     def __init__(self, provider: str, model_name: str, rate_limit: int) -> None:
-        load_dotenv()
         self.provider = provider
         self.model_name = model_name
         self.provider_route = self.get_provider_route(provider)

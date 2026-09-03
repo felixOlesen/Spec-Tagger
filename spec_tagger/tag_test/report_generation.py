@@ -21,6 +21,7 @@ class Generator:
         test_coverage_location: str,
         test_coverage_library: str,
         verbose: bool,
+        coverage_container_root: str | None = None,
     ):
         self.report_output_dir = report_output_dir
         self.report_type = report_type
@@ -35,6 +36,7 @@ class Generator:
         self.test_coverage_location = test_coverage_location
         self.test_coverage_data = None
         self.test_coverage_library = test_coverage_library
+        self.coverage_container_root = coverage_container_root
         self.repo_root = os.getcwd()
 
     def generate_report(self):
@@ -284,8 +286,20 @@ class Generator:
                             (covered if hits > 0 else missing).append(idx + 1)
 
                         # SimpleCov writes ABSOLUTE paths; normalise so they match
-                        # the relative paths git and coverage.py use.
-                        rel = os.path.relpath(abs_path, self.repo_root)
+                        # the relative paths git and coverage.py use. When coverage
+                        # ran inside a container whose mount point differs from
+                        # where spectagger runs (self.repo_root), relpath-ing
+                        # against repo_root walks up to "/" and back down,
+                        # producing a deeply nested "../../.." path - so prefer
+                        # stripping the known container root instead.
+                        if self.coverage_container_root and abs_path.startswith(
+                            self.coverage_container_root
+                        ):
+                            rel = os.path.relpath(
+                                abs_path, self.coverage_container_root
+                            )
+                        else:
+                            rel = os.path.relpath(abs_path, self.repo_root)
 
                         relevant = len(covered) + len(missing)
                         merged[rel] = {
