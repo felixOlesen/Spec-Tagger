@@ -42,22 +42,15 @@ FRAMEWORKS = {
         "func": None,
         "skip_prefixes": ("#",),
         "block_style": "do_end",
-        "describe": re.compile(r'^\s*(?:RSpec\.)?(?:describe|context)\s+["\']?(.+?)["\']?\s+do\b'),
-        "example": re.compile(r'^\s*(?:it|specify)\s+(?:["\'](.+?)["\']\s+)?(?:do\b|\{)'),
+        "describe": re.compile(
+            r'^\s*(?:RSpec\.)?(?:describe|context)\s+["\']?(.+?)["\']?\s+do\b'
+        ),
+        "example": re.compile(
+            r'^\s*(?:it|specify)\s+(?:["\'](.+?)["\']\s+)?(?:do\b|\{)'
+        ),
         "address_mode": "file_line",
         "test_format": "{file}:{line}",
         "detection": {"command_signals": [re.compile(r"\brspec\b")]},
-    },
-    "js.jest": {
-        "extensions": {".js", ".ts", ".jsx", ".tsx"},
-        "func": None,
-        "skip_prefixes": ("//",),
-        "block_style": None,
-        "describe": re.compile(r'^\s*describe\s*\(\s*["\'`](.+?)["\'`]'),
-        "example": re.compile(r'^\s*(?:it|test)\s*\(\s*["\'`](.+?)["\'`]'),
-        "address_mode": "name_pattern",
-        "test_format": '{file} -t "{name}"',
-        "detection": {"command_signals": [re.compile(r"\bjest\b")]},
     },
 }
 

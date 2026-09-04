@@ -96,8 +96,6 @@ def run(args):
 
     if not args.test_framework or not framework:
         framework, matches = detect_framework(args.test_command)
-    print(framework)
-    print(matches)
 
     if framework:
         print(f"Framework detected: {framework}, with other matches: {matches}")

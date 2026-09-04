@@ -27,10 +27,6 @@ def run(args):
     collected_context = aggregator.get_all_context()
     git_global_context = aggregator.git_context_data
 
-    for key, context_item in collected_context["report"].items():
-        print(key)
-        if not context_item:
-            print(key)
     # Classify Problem
     triage = ResultTriage(
         collected_context,

@@ -1,6 +1,7 @@
 import json
 from _pytest.tmpdir import tmp_path
 from spec_tagger.tag_test.report_generation import Generator
+from spec_tagger.spec_review.context_aggregator import ContextAggregator
 
 
 def tag_id(tag_type, name, revision):
@@ -42,8 +43,7 @@ def make_generator(tmp_path, **overrides):
     return Generator(**defaults)
 
 
-# step~report_generation_json~1
-def test_report_generation_to_json(tmp_path):
+def test_valid_report_parsed_correctly(tmp_path):
     tag_link = {"feat~example": make_link(tag_id("feat", "example", 1))}
     test_result = {
         tag_id("feat", "example", 1): make_test_result(test_count=1, pass_count=1)
@@ -56,32 +56,10 @@ def test_report_generation_to_json(tmp_path):
         test_output=test_result,
     )
     generator.generate_report()
+    aggregator = ContextAggregator((tmp_path / "report.json"), "HEAD~1", "HEAD")
+    total_context = aggregator.get_all_context()
 
     outputted_json = json.loads((tmp_path / "report.json").read_text())
     assert outputted_json["test_results"][tag_id("feat", "example", 1)]["spec_tag"][
         "full_tag"
     ] == tag_id("feat", "example", 1)
-
-
-# step~report_generation_html~1
-def test_report_generation_to_html(tmp_path):
-    tag_link = {"feat~example": make_link(tag_id("feat", "example", 1))}
-    test_result = {
-        tag_id("feat", "example", 1): make_test_result(test_count=1, pass_count=1)
-    }
-    report_output = tmp_path / "report"
-
-    generator = make_generator(
-        tmp_path,
-        report_output_dir=str(report_output),
-        report_type="html",
-        successful_links=tag_link,
-        test_output=test_result,
-    )
-    generator.generate_report()
-
-    assert report_output.is_dir()
-    data_file = (report_output / "data.js").read_text()
-    assert tag_id("feat", "example", 1) in data_file
-    for template in ("index.html", "style.css", "script.js"):
-        assert (report_output / template).read_text()

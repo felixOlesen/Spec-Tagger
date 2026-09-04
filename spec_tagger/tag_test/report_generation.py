@@ -141,9 +141,12 @@ class Generator:
             test_count = data["test_count"]
             pass_count = data["pass_count"]
             fail_count = data["fail_count"]
+
             if test_count == 0:
                 status = f"{YELLOW}UNTESTED{RESET}"
-            elif pass_count == test_count:
+            elif pass_count == (pass_count + fail_count) and not self.one_by_one:
+                status = f"{GREEN}PASSED{RESET}"
+            elif pass_count == test_count and self.one_by_one:
                 status = f"{GREEN}PASSED{RESET}"
             else:
                 status = f"{RED}FAILED{RESET}"
@@ -179,11 +182,27 @@ class Generator:
                 "test_coverage"
             ].items():
                 print(f"\nCoverage for Tag {tag}")
-                for file, file_cov_data in data.items():
-                    print(f"Coverage for {file}")
-                    print(f"Lines Covered: {len(file_cov_data['covered_lines'])}")
-                    print(f"Missing Lines: {len(file_cov_data['missing_lines'])}")
-                    print(f"Percent Covered: {file_cov_data['coverage']}\n")
+                if len(data.items()) > 5:
+                    i = 0
+                    for file, file_cov_data in data.items():
+                        if (
+                            file_cov_data["covered_lines"] == "0"
+                            and file_cov_data["missing_lines"] == "0"
+                        ):
+                            continue
+                        if i == 4:
+                            break
+                        print(f"Coverage for {file}")
+                        print(f"Lines Covered: {len(file_cov_data['covered_lines'])}")
+                        print(f"Missing Lines: {len(file_cov_data['missing_lines'])}")
+                        print(f"Percent Covered: {file_cov_data['coverage']}\n")
+                        i += 1
+                else:
+                    for file, file_cov_data in data.items():
+                        print(f"Coverage for {file}")
+                        print(f"Lines Covered: {len(file_cov_data['covered_lines'])}")
+                        print(f"Missing Lines: {len(file_cov_data['missing_lines'])}")
+                        print(f"Percent Covered: {file_cov_data['coverage']}\n")
 
         print("\n---------- Missed Files/Tests ----------")
         if (

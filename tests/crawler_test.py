@@ -48,20 +48,32 @@ def test_finds_spec_file():
     assert files[0] == single_file
 
 
-# story~identify_function_name~1
+# story~identify_function_name~1 story~pytest_test_identified~1
 def test_finds_correct_function_name():
     dir = "test_data/tests/"
     crawler = TestCrawler(verbose=False, test_dir=dir, framework="python.pytest")
     tag_data = crawler.run()
     tag = tag_data.get_tag(tag_id("feat", "example_tag", 1))
-    print(tag)
     assert tag["test_function"] == "test_example_function"
+
+
+# feat~uncovered_test_collection~1 story~uncovered_file_collection~1
+def test_uncovered_function():
+    dir = "test_data/tests/"
+    crawler = TestCrawler(verbose=False, test_dir=dir, framework="python.pytest")
+    tag_data = crawler.run()
+    missing_items = crawler.get_coverage_data()
+    missing_files = missing_items["files"]
+    missing_tests = missing_items["tests"]
+    print(missing_items)
+    assert "test_one_tagless_func_2" in missing_tests
+    assert "test_data/tests/empty_file.py" in missing_files
 
 
 TEST_CLASS_FIXTURE = "test_data/tests/example_class_test.py"
 
 
-# feat~pytest_class_support~1
+# story~pytest_class_identified~1
 def test_pytest_class_method_resolves_to_class_qualified_name():
     crawler = TestCrawler(
         verbose=False, test_dir="test_data/tests", framework="python.pytest"
@@ -81,7 +93,7 @@ def test_pytest_class_method_resolves_to_class_qualified_name():
     )
 
 
-# feat~pytest_class_support~1
+# story~pytest_class_identified~1
 def test_pytest_class_method_builds_correct_command():
     crawler = TestCrawler(
         verbose=False, test_dir="test_data/tests", framework="python.pytest"

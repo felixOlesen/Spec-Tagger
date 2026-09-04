@@ -1,10 +1,9 @@
-from typing import assert_never
 from spec_tagger.ai.prompt_construction import PromptConstructor, Prompt
 from spec_tagger.spec_review.solution import Solution
 from spec_tagger.spec_review.result_triage import ProblemType, SolutionMessages
 
 
-# feat~creating_a_prompt_object~1 story~creating_a_successful_prompt_object~1
+# story~creating_a_successful_prompt_object~1
 def test_prompt_creation():
     solution = Solution(
         related_tag=None,
