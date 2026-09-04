@@ -23,7 +23,6 @@ testpaths = ["tests"]
 
 [tool.setuptools.package-data]
 "spec_tagger.tag_test.templates" = ["*"]
-"spec_tagger.agent_skill" = ["**/*"]
 
 [tool.ruff]
 target-version = "py314"

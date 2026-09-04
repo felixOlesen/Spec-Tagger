@@ -5,32 +5,14 @@ from pathlib import Path
 from spec_tagger.merge_analysis import orchestrator as merge_analysis_orchestrator
 from spec_tagger.tag_test import orchestrator as tag_test_orchestrator
 from spec_tagger.spec_review import orchestrator as review_orchestrator
-import spec_tagger.agent_skill.skill_installer as skill_installer
 
 
 def main():
     load_dotenv(Path.cwd() / ".env", override=True)
     parser = argparse.ArgumentParser()
     sub_parsers = parser.add_subparsers(dest="command")
-    skill_parser = sub_parsers.add_parser("install-skill")
     spec_review_parser = sub_parsers.add_parser("spec-review")
     merge_analysis_parser = sub_parsers.add_parser("merge-analysis")
-    # SKILL INSTALL ARGS
-    skill_parser.add_argument(
-        "--destination",
-        help="The destination that you want the spectagger skill folder to be copied to. E.g. ~/.claude/skills for claude code.",
-        required=True,
-    )
-    skill_parser.add_argument(
-        "--force",
-        help="Forces the installer script to overwrite any pre-existing installations of the spectagger skill.",
-        action="store_true",
-    )
-    skill_parser.add_argument(
-        "--install_dry_run",
-        help="Prints a where the file would be installed without actually installing it, good for testing.",
-        action="store_true",
-    )
 
     # MERGE ANALYSIS ARGS
     merge_analysis_parser.add_argument(
@@ -245,12 +227,6 @@ def main():
         print(f"Arguments: {args}")
 
     match args.command:
-        case "install-skill":
-            print("Install Skill Invoked")
-            skill_installer.install_skill(
-                args.destination, args.force, args.install_dry_run
-            )
-            return
         case "spec-review":
             print("Spec-Reivew command invoked")
             return review_orchestrator.run(args=args)
