@@ -24,7 +24,7 @@ def test_booking_flight_ticket():
 
 And then by running ```spectagger``` it will crawl through the specification and test directories to find tags and execute tests by-tag, giving you observability into how your documented functionality is being realised in the source code.
 
-## spec-review
+## Spec Review
 
 The spec review process lets the tool review the generated json report, and provide LLM insight by sending an overview of the changes to an LLM endpoint that you provide. Giving you an understanding of any ways that your spec might be drifting from your tests and source code or vice versa.
 
@@ -111,13 +111,14 @@ spectagger --tag_check
 ```
 
 ```
-# To do a 
+# To invoke a Spec Review 
 spectagger spec-review
 ```
 
 ## Compatibility
 
-Currently SpecTagger is only compatible with
+Currently SpecTagger is only compatible with:
+
 Python
 
 - Pytest: python.pytest
