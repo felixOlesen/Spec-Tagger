@@ -13,6 +13,15 @@ def main():
     sub_parsers = parser.add_subparsers(dest="command")
     spec_review_parser = sub_parsers.add_parser("spec-review")
     merge_analysis_parser = sub_parsers.add_parser("merge-analysis")
+    case_similarity_parser = sub_parsers.add_parser("case-similarity")
+
+    # CASE SIMILARITY ARGS
+    case_similarity_parser.add_argument(
+        "--file_1", help="The first file that the tool compares the other against."
+    )
+    case_similarity_parser.add_argument(
+        "--file_2", help="The second file that the tool compares the other against."
+    )
 
     # MERGE ANALYSIS ARGS
     merge_analysis_parser.add_argument(
@@ -227,6 +236,9 @@ def main():
         print(f"Arguments: {args}")
 
     match args.command:
+        case "case-similarity":
+            print("Case-Similarity command invoked")
+            return similarity_orchestrator.run(args=args)
         case "spec-review":
             print("Spec-Reivew command invoked")
             return review_orchestrator.run(args=args)

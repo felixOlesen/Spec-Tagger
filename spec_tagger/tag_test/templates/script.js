@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
       "<p class='meta-info'>Error: No report data found.</p>";
     return;
   }
+  // If tests were run one-by-one, show it
   if (data.one_by_one) {
     document.getElementById("one-by-one-header").innerHTML = "<em>One-by-one Mode</em>";
   }
@@ -16,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderMissedFilesTests(coverageData.tag_coverage || {});
   renderInvalidTags(data.invalid_tags || []);
 });
-
+// Renders the results of the tests by tag, rows are expandable to read more information on specific tests if one_by_one mode is active.
 function renderTestResults(results, one_by_one) {
   const container = document.getElementById("results-container");
   const specItems = Object.entries(results);
@@ -53,7 +54,7 @@ function renderTestResults(results, one_by_one) {
       }
     }
 
-    // One dot per test run, so a spec with many results stays a single row.
+    // One dot per test run
     const outcomesHtml = canExpand
       ? runs
         .map(run => `<span class="outcome-dot outcome-${escapeHtml(run.outcome)}" title="${escapeHtml(run.cmd || run.outcome)}"></span>`)
@@ -129,7 +130,7 @@ function renderTestResults(results, one_by_one) {
     row.classList.toggle("expanded");
   });
 }
-
+// Renders html block for coverage information tag-by-tag into expandable rows
 function renderCoverage(testCoverage) {
   const container = document.getElementById("coverage-container");
   const tagEntries = Object.entries(testCoverage || {});
@@ -146,7 +147,6 @@ function renderCoverage(testCoverage) {
     const rowId = `coverage-${tagIndex}-detail`;
     const canExpand = fileEntries.length > 0;
 
-    // Weight each file's reported coverage percent by how many lines it contributes.
     let weightedSum = 0;
     let totalWeight = 0;
     fileEntries.forEach(([, fileData]) => {
@@ -222,7 +222,6 @@ function renderCoverage(testCoverage) {
       <tbody>${rowsHtml}</tbody>
     </table>
   `;
-
   container.addEventListener("click", event => {
     const row = event.target.closest(".spec-row.expandable");
     if (!row) return;
@@ -238,7 +237,8 @@ function coverageBadgeClass(percent) {
   if (percent >= 50) return "badge-untested";
   return "badge-fail";
 }
-
+// Renders the html blocks for Files and Tests that have not been tagged.
+// Requires update where the div needs to be made scrollable. Otherwise coverage info gets out of control
 function renderMissedFilesTests(tagCoverage) {
   const container = document.getElementById("missed-container");
   const files = Array.from(tagCoverage.files || []);
@@ -267,14 +267,14 @@ function renderMissedFilesTests(tagCoverage) {
         </thead>
         <tbody>
           ${testEntries
-            .map(([testSignature, info]) => `
+      .map(([testSignature, info]) => `
               <tr>
                 <td>${escapeHtml(testSignature)}</td>
                 <td>${escapeHtml(info.file)}</td>
                 <td>${escapeHtml(String(info.line))}</td>
               </tr>
             `)
-            .join("")}
+      .join("")}
         </tbody>
       </table>
     `
@@ -291,7 +291,7 @@ function renderMissedFilesTests(tagCoverage) {
     </div>
   `;
 }
-
+// Produces the html block for invalid tags
 function renderInvalidTags(tags) {
   const container = document.getElementById("tags-container");
 
@@ -328,7 +328,6 @@ function renderInvalidTags(tags) {
   `;
 }
 
-// Utility function to prevent XSS if test outputs contain raw HTML
 function escapeHtml(unsafe) {
   if (typeof unsafe !== 'string') return unsafe;
   return unsafe

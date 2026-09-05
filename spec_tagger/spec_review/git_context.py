@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 def _git(*args: str) -> str:
-    """Run a git command, returning the stdout of the command. Empty string returned on failure."""
+    """Runs a git command, returning the stdout of the command. Empty string is returned on failure."""
     try:
         return subprocess.run(
             ["git", *args], capture_output=True, text=True, check=True
@@ -15,12 +15,12 @@ def _git(*args: str) -> str:
 
 
 def _event_payload() -> dict:
-    """The full webhook event that triggered the workflow.
-    Actions writes it to a file and puts the path in GITHUB_EVENT_PATH. This is
-    where the PR title/body/author are located.
+    """Pulls the gtihub event information from a tirggered workflow.
+    Uses GITHUB_EVENT_PATH. Where PR information such as the title, author and message are found.
     """
     path = os.environ.get("GITHUB_EVENT_PATH")
     if not path or not Path(path).exists():
+        print("WARNING, Github event path not found, asusming execution is local.")
         return {}
     return json.loads(Path(path).read_text())
 
@@ -37,9 +37,10 @@ def collect_context(base: str | None = None, head: str | None = None) -> dict:
             or os.environ.get("GITHUB_BASE_REF")
             or "origin/main"
         )
+        print("No Git base provided, defaulting to origin/main.")
     if not head:
         head = pr.get("head", {}).get("sha") or os.environ.get("GITHUB_SHA") or "HEAD"
-
+        print("No Git head provided, defaulting to HEAD of current branch.")
     diff_range = f"{base}...{head}"
 
     return {
@@ -97,6 +98,7 @@ def changed_lines_from_diff(base: str, head: str) -> dict[str, set[int]]:
 def get_git_log_for_list_of_lines(
     file: str, lines: set[int], base: str, head: str, message_only: bool = False
 ) -> list:
+    """Retrieves git logs for a list of lines in a specific file that has changed."""
     runs = _get_contiguous_runs(lines)
     if not runs:
         return []
@@ -115,10 +117,9 @@ def get_git_log_for_list_of_lines(
 
 
 def _get_contiguous_runs(lines: set[int], tolerance: int = 2) -> list[tuple[int, int]]:
-    """Group line numbers into (start, end) runs.
-    `tolerance` merges runs separated by small gaps — a 1-2 line gap is usually
-    an unchanged brace or blank line inside one logical change, and merging
-    avoids emitting dozens of single-line ranges."""
+    """Group line numbers into (start, end) runs. Tolerance provides some leeway
+    into how many lines of a gap are allowed for a change to stay grouped.
+    This prevents many single line changes from being returned"""
     if not lines:
         return []
     ordered = sorted(lines)

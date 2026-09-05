@@ -69,6 +69,8 @@ tiktoken==0.13.0
 tokenizers==0.23.1
 tomli==2.4.1
 tqdm==4.70.0
+tree-sitter==0.26.0
+tree-sitter-language-pack==1.15.8
 typing_extensions==4.16.0
 typing-inspection==0.4.2
 ukkonen==1.1.0

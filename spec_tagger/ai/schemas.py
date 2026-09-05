@@ -38,7 +38,10 @@ Significance = Literal["behavioural", "cosmetic"]
 
 
 class UncoveredChange(BaseModel):
-    """One behavioural change in the implementation that specs and tests miss."""
+    """One behavioural change in the implementation that specs and tests miss.
+    Results in a suggested spec and a suggested test for the developer to implement.
+    Works based on confidence scores where scores above 60 are reported, otherwise ignored.
+    """
 
     behaviour: str = Field(
         description=(
@@ -87,9 +90,6 @@ class UncoveredChange(BaseModel):
         ge=0,
         le=100,
         description=(
-            "How certain you are that this is a real, distinct behavioural change "
-            "that the supplied specs and tests do not cover. Below 60 means you are "
-            "guessing — omit the item rather than reporting it. Do not inflate: a "
-            "list padded with weak findings trains reviewers to ignore the report."
+            "Certainty in the generated spec and test being able to effectively describe the uncovered change, 0-100."
         ),
     )

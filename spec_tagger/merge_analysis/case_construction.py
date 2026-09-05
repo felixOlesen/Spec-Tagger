@@ -4,15 +4,9 @@ from datetime import datetime, timezone
 import time
 
 
-class Case:
-    def __init__(self) -> None:
-        pass
-
-
 class CaseConstructor:
     def __init__(
         self,
-        incomplete_matrices,
         complete_matrices,
         case_dir_path,
         repo_abs_path,
@@ -21,7 +15,6 @@ class CaseConstructor:
         src_prefix,
         commit_times,
     ) -> None:
-        self.incomplete_matrices = incomplete_matrices
         self.complete_matrices = complete_matrices
         self.case_dir_path = Path(case_dir_path)
         self.repo_abs_path = Path(repo_abs_path)
@@ -31,11 +24,8 @@ class CaseConstructor:
         self.commit_times = commit_times
 
     def run(self):
-
         # Complete Cases Construction
         self._complete_case_construction()
-        # Incomplete Cases Construction
-        self._incomplete_case_construction()
 
     def _complete_case_construction(self):
         if not self.complete_matrices:
@@ -53,6 +43,8 @@ class CaseConstructor:
             for merge_sha, commits in complete_matrix.items()
             for commit_sha, scores in commits.items()
         ]
+        # Sorts the entries by viable times based on a cutoff (last 5 years)
+        # This prevents encountering difficult-to-set-up development environments
         viable = [
             (merge_sha, commit_sha, scores)
             for merge_sha, commit_sha, scores in flat
@@ -82,8 +74,8 @@ class CaseConstructor:
             "test": self.test_prefix,
             "src": self.src_prefix,
         }
-        out = self.case_dir_path / case_id
-        out.mkdir(parents=True, exist_ok=True)
+        output_dir = self.case_dir_path / case_id
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         def git(*args) -> str:
             return subprocess.run(
@@ -99,12 +91,12 @@ class CaseConstructor:
         for name, prefix in ARTIFACTS.items():
             diff = git("diff", parent, commit_sha, "--", prefix)
             if diff.strip():
-                (out / f"{name}.diff").write_text(diff, encoding="utf-8")
+                (output_dir / f"{name}.diff").write_text(diff, encoding="utf-8")
         timestamp = self.commit_times.get(commit_sha)
         date_str = datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime(
             "%Y-%m-%d UTC"
         )
-        (out / "meta.txt").write_text(
+        (output_dir / "meta.txt").write_text(
             f"case_id:    {case_id}\n"
             f"merge:      {merge_sha}\n"
             f"commit:     {commit_sha}\n"
@@ -114,7 +106,4 @@ class CaseConstructor:
             f"--- files ---\n{git('show', '--stat', '--format=', commit_sha)}\n",
             encoding="utf-8",
         )
-        return out
-
-    def _incomplete_case_construction(self):
-        pass
+        return output_dir

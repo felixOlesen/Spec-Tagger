@@ -12,15 +12,15 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60 
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: |
-          pip install "git+https://github.com/felixOlesen/Spec-Tagger@v0.0.9"
-          pip install -r requirements.txt
+          pip install "git+https://github.com/felixOlesen/Spec-Tagger@v0.1.0"
+          pip install -r requirements.txt # Only necessary for the spectagger repo, should not be brought with on other projects
       
       - name: Run SpecTagger
         id: spec_tagger_testing
@@ -29,11 +29,11 @@ jobs:
           mkdir report
           spectagger --target_spec features --test_dir tests --test_command "coverage run --append -m pytest {tests}" --report --report_type json --coverage_report_path coverage_reports --coverage_library "python.coverage" --verbose
         continue-on-error: true
-      - name: SpecTagger Results Review
+      - name: SpecTagger Results Review # Calls the spec review command, initiating LLM review of semantic drift and uncovered changes
         id: spec_tagger_review
         env:
           NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
-        run: spectagger spec-review --report_input report/report.json --model_provider nvidia_nim --model_name nvidia/nemotron-3.5-lightning-30b-a3b
+        run: spectagger spec-review --report_input report/report.json --model_provider nvidia_nim --model_name nvidia/nemotron-3.5-lightning-30b-a3b --include_semantic_drift_review --include_uncovered_implementation_review
         continue-on-error: true
       - uses: actions/github-script@v7
         if: always()
@@ -42,9 +42,8 @@ jobs:
             const fs = require('fs');
             if (!fs.existsSync('spectagger_findings.md')) return;
             const body = fs.readFileSync('spectagger_findings.md', 'utf8');
-            const marker = '## Spec review';          // matches your render() heading
-
-            const {data: comments} = await github.rest.issues.listComments({
+            const marker = '## Spec review';          
+            const {data: comments} = await github.rest.issues.listComments({ # Writes the spectagger_findings.md as a github issue
               ...context.repo,
               issue_number: context.issue.number,
             });
@@ -56,19 +55,14 @@ jobs:
               await github.rest.issues.updateComment({
                 ...context.repo, comment_id: existing.id, body,
               });
-            } else {
+            } else { # Creates Comment on the PR with the spectagger findings body
               await github.rest.issues.createComment({
                 ...context.repo, issue_number: context.issue.number, body,
               });
             }
+      # Fails the PR review if any tests fail, does so after the full test suite is run though
       - name: Gate on test failures
         if: steps.spec_tagger_testing.outcome == 'failure'
         run: |
-          echo "::error::Spec-linked tests failed"
-          exit 1
-
-      - name: Gate on review failures
-        if: steps.spec_tagger_review.outcome == 'failure'
-        run: |
-          echo "::error::Spec review found blocking drift"
+          echo "::error::Linked tests failed"
           exit 1

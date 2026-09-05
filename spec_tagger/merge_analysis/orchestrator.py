@@ -19,25 +19,11 @@ def run(args):
     #
     #   Then find out which artifacts are touched based on the path prefix they have
     #   (features/ , tests/ , src/)
-    #
-    #   Then, Pair spec-only and test-only commits with the earlier code commits they respond to,
-    #   producing candidate labelled windows.
-    #
-    #   Select a window where those clusters are dense. Tag the repo once at the window's start,
-    #   verify the tool reports clean.
-    #
-    #   Pre-register by writing down (before running anything) which commits you expected to show drift and why.
-    #
-    #   Walk forward sequentially, tagging only what's new, running the tool at each step wit --base as the parent and --head
-    #   as the commit.
-    #
-    #   Adjudicate findings against your pre-registered expectations.
-    search = ChangeSearch(args.spec_dir, args.test_dir, args.src_dir)
-    incomplete_matrices, complete_matrices, commit_times = search.run()
 
-    # Right now the overarching flow is:
+    search = ChangeSearch(args.spec_dir, args.test_dir, args.src_dir)
+    complete_matrices, commit_times = search.run()
+
     constructor = CaseConstructor(
-        incomplete_matrices,
         complete_matrices,
         args.case_dir,
         args.repo_abs_path,
@@ -47,5 +33,3 @@ def run(args):
         commit_times,
     )
     constructor.run()
-    # filter results -> From the candidates, human review the promising ones -> tag candidates -> run tool ->collect results from llm suggestions
-    pass

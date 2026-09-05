@@ -5,13 +5,6 @@ import os
 from spec_tagger.merge_analysis.symbol_extraction import SymbolExtractor
 from spec_tagger.merge_analysis.language_support import EXT_TO_LANG
 import re
-from itertools import combinations
-from spec_tagger.merge_analysis.clustering import (
-    build_groups,
-    analyse_group,
-    rank_candidates,
-    report,
-)
 
 
 class ChangeSearch:
@@ -33,35 +26,14 @@ class ChangeSearch:
 
         # Translate logs into ranked items based on internal jaccard similarity of respective bags of words
         complete_matrices = {}
-        incomplete_matrices = {}
         for merge_sha, pr_content in scanned_entries.items():
             complete_matrix = self._make_complete_relatedness_matrix(pr_content)
             if complete_matrix:
                 print(f"\n{merge_sha}: COMPLETE CHANGE FOUND")
                 complete_matrices[merge_sha] = complete_matrix
                 print(complete_matrices[merge_sha])
-
-            incomplete_matrix = self._incomplete_relatedness_matrix(pr_content)
-            if incomplete_matrix:
-                print(f"\n{merge_sha}: INCOMPLETE CHANGE FOUND")
-                incomplete_matrices[merge_sha] = incomplete_matrix
-                print(incomplete_matrices[merge_sha])
-
-        # Report on the incomplete commits found to judge which ones are right for testing
-        for merge_sha, matrix in incomplete_matrices.items():
-            all_commits = [sha for sha, _ in scanned_entries[merge_sha]["all_changes"]]
-            change_types_by_commit = dict(scanned_entries[merge_sha]["all_changes"])
-            chronological = self._git(
-                "rev-list", "--reverse", f"{merge_sha}^1..{merge_sha}"
-            ).splitlines()
-            groups = [
-                analyse_group(g, change_types_by_commit, chronological)
-                for g in build_groups(matrix, all_commits, self.threshold)
-            ]
-            print(report(groups))
-
         commit_times = self._get_commit_times()
-        return incomplete_matrices, complete_matrices, commit_times
+        return complete_matrices, commit_times
 
     def _get_commit_times(self):
         out = self._git("log", "--format=%H %ct", "--all")
@@ -110,7 +82,7 @@ class ChangeSearch:
             for sha in commits:
                 files = self._git("show", "--name-only", "--format=", sha).splitlines()
                 per_commit[sha] = self._classify_commit(files)
-            kinds_in_pr = set().union(*per_commit.values())
+            change_types_in_pr = set().union(*per_commit.values())
             isolated = {}
             incomplete_mixed = {}
             complete_mixed = {}
@@ -127,8 +99,8 @@ class ChangeSearch:
                 per_pr[merge_sha] = {}
 
             if merge_sha in per_pr:
-                if kinds_in_pr:
-                    per_pr[merge_sha]["change_types"] = kinds_in_pr
+                if change_types_in_pr:
+                    per_pr[merge_sha]["change_types"] = change_types_in_pr
 
                 if isolated:
                     per_pr[merge_sha]["isolated_changes"] = isolated
@@ -207,41 +179,6 @@ class ChangeSearch:
                 source, lines, lang
             )
         return symbols
-
-    def _incomplete_relatedness_matrix(self, pr_content):
-        CHANGE_TYPES = (
-            ("spec", self.spec_prefix),
-            ("test", self.test_prefix),
-            ("src", self.src_prefix),
-        )
-        cache: dict[str, dict[str, set]] = {}
-        for sha, change_types in pr_content["all_changes"]:
-            entry = {}
-            for change_type, prefix in CHANGE_TYPES:
-                if change_type not in change_types:
-                    continue
-                diff = self._diff(sha, prefix)
-                if not diff:
-                    continue
-                if change_type == "spec":
-                    entry[change_type] = self.symbol_extractor._prose_words(diff)
-                else:
-                    entry[change_type] = self._get_symbols_from_changed_lines(
-                        sha, self._changed_lines(diff)
-                    )
-            if entry:
-                cache[sha] = entry
-
-        matrix: dict[tuple[str, str], dict[str, float]] = {}
-        for a, b in combinations(cache, 2):
-            scores = {
-                f"{ka}->{kb}": self.jaccard(va, vb)
-                for ka, va in cache[a].items()
-                for kb, vb in cache[b].items()
-            }
-            if any(s >= self.threshold for s in scores.values()):
-                matrix[(a, b)] = scores
-        return matrix
 
     def jaccard(self, a: set, b: set) -> float:
         if not a or not b:
