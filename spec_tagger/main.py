@@ -75,6 +75,7 @@ def main():
         "--rate_limit",
         help="This needs to be an integer describing the maximum responses per minute that are allowed for a specific endpoint, please refer to your API documentation for this.",
         default=os.environ.get("SPECREVIEW_RATE_LIMIT", 10),
+        type=int,
     )
     spec_review_parser.add_argument(
         "--no_ai",
@@ -236,9 +237,6 @@ def main():
         print(f"Arguments: {args}")
 
     match args.command:
-        case "case-similarity":
-            print("Case-Similarity command invoked")
-            return similarity_orchestrator.run(args=args)
         case "spec-review":
             print("Spec-Reivew command invoked")
             return review_orchestrator.run(args=args)
